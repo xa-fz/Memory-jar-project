@@ -10,17 +10,20 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core'
+import { MIME_TYPES } from '@mantine/dropzone'
 import { useDisclosure } from '@mantine/hooks'
 import { IconFileText, IconTrash, IconUpload } from '@tabler/icons-react'
+import { useIntl } from 'react-intl'
 import type { DocumentItem } from '@/types'
+import { UploadModal } from '@/components'
 import { initialDocuments } from '@/data/mock'
-import { UploadModal } from '@/components/UploadModal'
 
 function formatDate(date = new Date()) {
   return date.toISOString().slice(0, 10)
 }
 
 export function DocumentsPage() {
+  const intl = useIntl()
   const [documents, setDocuments] = useState<DocumentItem[]>(initialDocuments)
   const [opened, { open, close }] = useDisclosure(false)
 
@@ -32,7 +35,10 @@ export function DocumentsPage() {
     const newDoc: DocumentItem = {
       id: Date.now(),
       title: file.name,
-      preview: `已上传文件（${(file.size / 1024).toFixed(1)} KB），内容将在接入后端后自动索引。`,
+      preview: intl.formatMessage(
+        { id: 'documents.uploadPreview' },
+        { size: (file.size / 1024).toFixed(1) },
+      ),
       date: formatDate(),
     }
     setDocuments((prev) => [newDoc, ...prev])
@@ -43,9 +49,9 @@ export function DocumentsPage() {
       <Stack gap="lg">
         <Group justify="space-between" align="flex-start">
           <div>
-            <Title order={2}>我的文档</Title>
+            <Title order={2}>{intl.formatMessage({ id: 'documents.title' })}</Title>
             <Text size="sm" c="dimmed" mt={4}>
-              管理你上传的文档记忆
+              {intl.formatMessage({ id: 'documents.subtitle' })}
             </Text>
           </div>
           <Button
@@ -53,7 +59,7 @@ export function DocumentsPage() {
             leftSection={<IconUpload size={16} />}
             onClick={open}
           >
-            上传文档
+            {intl.formatMessage({ id: 'documents.upload' })}
           </Button>
         </Group>
 
@@ -82,7 +88,7 @@ export function DocumentsPage() {
                   <ActionIcon
                     variant="subtle"
                     color="red"
-                    aria-label="删除文档"
+                    aria-label={intl.formatMessage({ id: 'documents.deleteAria' })}
                     onClick={() => handleDelete(doc.id)}
                   >
                     <IconTrash size={18} />
@@ -94,13 +100,32 @@ export function DocumentsPage() {
 
           {documents.length === 0 && (
             <Text c="dimmed" ta="center" py="xl">
-              暂无文档，点击「上传文档」添加你的第一份记忆
+              {intl.formatMessage({ id: 'documents.empty' })}
             </Text>
           )}
         </Stack>
       </Stack>
 
-      <UploadModal opened={opened} onClose={close} onUpload={handleUpload} />
+      <UploadModal
+        opened={opened}
+        onClose={close}
+        onUpload={handleUpload}
+        title={intl.formatMessage({ id: 'documents.upload' })}
+        acceptHint={intl.formatMessage({ id: 'documents.acceptHint' })}
+        accept={[
+          MIME_TYPES.pdf,
+          MIME_TYPES.csv,
+          MIME_TYPES.xls,
+          MIME_TYPES.xlsx,
+          'text/plain',
+          'text/markdown',
+          'application/json',
+          'application/xml',
+          'text/xml',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ]}
+      />
     </>
   )
 }

@@ -77,7 +77,7 @@ npm run lint
 
 ```
 src/
-├── components/       # UploadModal 等
+├── components/       # 每组件一文件夹，见 components/README.md
 ├── data/mock.ts      # 模拟数据（当前未接 API）
 ├── layouts/          # AppLayout（AppShell + 侧栏）
 ├── pages/            # ChatPage、DocumentsPage、HistoryPage

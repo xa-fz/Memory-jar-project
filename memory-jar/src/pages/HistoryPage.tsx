@@ -6,15 +6,18 @@ import {
   Title,
 } from '@mantine/core'
 import { IconChevronRight, IconClock } from '@tabler/icons-react'
+import { useIntl } from 'react-intl'
 import { historyItems } from '@/data/mock'
 
 export function HistoryPage() {
+  const intl = useIntl()
+
   return (
     <Stack gap="lg">
       <div>
-        <Title order={2}>历史记录</Title>
+        <Title order={2}>{intl.formatMessage({ id: 'history.title' })}</Title>
         <Text size="sm" c="dimmed" mt={4}>
-          查看过去的对话记录
+          {intl.formatMessage({ id: 'history.subtitle' })}
         </Text>
       </div>
 

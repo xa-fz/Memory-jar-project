@@ -13,6 +13,7 @@ import {
   Title,
 } from '@mantine/core'
 import { IconBrain, IconSend } from '@tabler/icons-react'
+import { useIntl } from 'react-intl'
 import type { ChatMessage } from '@/types'
 import { initialMessages } from '@/data/mock'
 
@@ -64,6 +65,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 }
 
 export function ChatPage() {
+  const intl = useIntl()
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -80,7 +82,7 @@ export function ChatPage() {
     const loadingMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
-      content: '正在检索并生成回答…',
+      content: intl.formatMessage({ id: 'chat.loading' }),
       loading: true,
     }
 
@@ -97,7 +99,7 @@ export function ChatPage() {
           ? {
               ...msg,
               loading: false,
-              content: '这是模拟回答。接入后端后，将基于你的文档内容生成真实回复。',
+              content: intl.formatMessage({ id: 'chat.mockReply' }),
             }
           : msg,
       ),
@@ -106,14 +108,11 @@ export function ChatPage() {
   }
 
   return (
-    <Stack
-      gap="md"
-      style={{ height: 'calc(100dvh - 2 * var(--mantine-spacing-md))' }}
-    >
+    <Stack gap="md" style={{ flex: 1, minHeight: 0 }}>
       <Box>
-        <Title order={2}>对话</Title>
+        <Title order={2}>{intl.formatMessage({ id: 'chat.title' })}</Title>
         <Text size="sm" c="dimmed" mt={4}>
-          优先检索你的文档，也支持日常问答
+          {intl.formatMessage({ id: 'chat.subtitle' })}
         </Text>
       </Box>
 
@@ -131,7 +130,7 @@ export function ChatPage() {
         <Group align="flex-end" gap="sm" wrap="nowrap">
           <Textarea
             flex={1}
-            placeholder="问待办、笔记内容，或任何日常问题…"
+            placeholder={intl.formatMessage({ id: 'chat.placeholder' })}
             value={input}
             onChange={(e) => setInput(e.currentTarget.value)}
             minRows={2}
@@ -151,7 +150,7 @@ export function ChatPage() {
             loading={sending}
             disabled={!input.trim()}
           >
-            发送
+            {intl.formatMessage({ id: 'chat.send' })}
           </Button>
         </Group>
       </Paper>

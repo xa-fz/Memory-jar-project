@@ -1,21 +1,23 @@
 import {
   AppShell,
   Divider,
+  Group,
   NavLink,
   Stack,
   Text,
-  ThemeIcon,
   Title,
 } from '@mantine/core'
 import {
-  IconBrain,
   IconClock,
   IconFileText,
   IconMessageCircle,
 } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
+import { useIntl } from 'react-intl'
+import { LanguageSwitcher } from '@/i18n/LanguageSwitcher'
 import type { PageId } from '@/types'
 import { recentChats } from '@/data/mock'
+import { AppHeaderAuth } from './AppHeaderAuth'
 
 interface AppLayoutProps {
   activePage: PageId
@@ -23,13 +25,15 @@ interface AppLayoutProps {
   children: ReactNode
 }
 
-const navItems: { id: PageId; label: string; icon: typeof IconMessageCircle }[] = [
-  { id: 'chat', label: '对话', icon: IconMessageCircle },
-  { id: 'documents', label: '文档', icon: IconFileText },
-  { id: 'history', label: '历史记录', icon: IconClock },
+const navItems: { id: PageId; labelId: 'nav.chat' | 'nav.documents' | 'nav.history'; icon: typeof IconMessageCircle }[] = [
+  { id: 'chat', labelId: 'nav.chat', icon: IconMessageCircle },
+  { id: 'documents', labelId: 'nav.documents', icon: IconFileText },
+  { id: 'history', labelId: 'nav.history', icon: IconClock },
 ]
 
 export function AppLayout({ activePage, onNavigate, children }: AppLayoutProps) {
+  const intl = useIntl()
+
   return (
     <AppShell
       navbar={{ width: 300, breakpoint: 'sm' }}
@@ -37,25 +41,38 @@ export function AppLayout({ activePage, onNavigate, children }: AppLayoutProps) 
     >
       <AppShell.Navbar p="md" withBorder>
         <Stack gap="lg" h="100%">
-          <div>
-            <Stack gap={4}>
-              <ThemeIcon size={36} radius="md" variant="light" color="blue">
-                <IconBrain size={22} />
-              </ThemeIcon>
-              <Title order={4}>Memory Jar</Title>
-              <Text size="sm" c="dimmed">
-                存入一切，随时召回
+          <Stack gap="md">
+            <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+              <AppHeaderAuth />
+              <LanguageSwitcher />
+            </Group>
+
+            <Stack gap={2}>
+              <Group gap={6} wrap="nowrap" align="center">
+                <Text
+                  span
+                  style={{ flexShrink: 0, fontSize: 16, lineHeight: 1 }}
+                  aria-hidden
+                >
+                  🧠
+                </Text>
+                <Title order={4} lh={1.2}>
+                  Memory Jar
+                </Title>
+              </Group>
+              <Text size="xs" c="dimmed" lh={1.4} pl={22}>
+                {intl.formatMessage({ id: 'app.tagline' })}
               </Text>
             </Stack>
-          </div>
+          </Stack>
 
           <Divider />
 
           <Stack gap={4}>
-            {navItems.map(({ id, label, icon: Icon }) => (
+            {navItems.map(({ id, labelId, icon: Icon }) => (
               <NavLink
                 key={id}
-                label={label}
+                label={intl.formatMessage({ id: labelId })}
                 leftSection={<Icon size={18} stroke={1.5} />}
                 active={activePage === id}
                 onClick={() => onNavigate(id)}
@@ -64,11 +81,9 @@ export function AppLayout({ activePage, onNavigate, children }: AppLayoutProps) 
             ))}
           </Stack>
 
-          <Divider />
-
-          <Stack gap="xs" mt="auto">
+          <Stack gap="xs" mt="auto" pt="md">
             <Text size="xs" c="dimmed" fw={600} tt="uppercase">
-              最近对话
+              {intl.formatMessage({ id: 'nav.recentChats' })}
             </Text>
             {recentChats.map((title) => (
               <Text key={title} size="sm" c="dimmed" lineClamp={1}>
@@ -79,7 +94,9 @@ export function AppLayout({ activePage, onNavigate, children }: AppLayoutProps) 
         </Stack>
       </AppShell.Navbar>
 
-      <AppShell.Main bg="gray.0">{children}</AppShell.Main>
+      <AppShell.Main bg="gray.0" style={{ display: 'flex', flexDirection: 'column' }}>
+        {children}
+      </AppShell.Main>
     </AppShell>
   )
 }

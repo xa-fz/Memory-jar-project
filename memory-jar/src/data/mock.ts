@@ -76,5 +76,3 @@ export const historyItems: HistoryItem[] = [
     datetime: '2026-05-20 11:08',
   },
 ]
-
-export const supportedExtensions = '.txt、.md、.pdf、.doc、.docx、.json、.xml、.csv、.xlsx'
