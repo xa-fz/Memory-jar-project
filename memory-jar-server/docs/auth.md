@@ -35,7 +35,7 @@
 ```python
 User(
     username=settings.default_username,      # 默认 admin
-    password_hash=hash_password(settings.default_password),  # 默认 1234
+    password_hash=hash_password(settings.default_password),  # 默认 P@ssw0rd
 )
 ```
 
@@ -63,7 +63,7 @@ Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "1234"
+  "password": "P@ssw0rd"
 }
 ```
 
@@ -218,7 +218,7 @@ fetch('http://localhost:8000/api/auth/me', {
 # 登录并保存 Cookie
 curl -c cookies.txt -X POST "http://localhost:8000/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d "{\"username\":\"admin\",\"password\":\"1234\"}"
+  -d "{\"username\":\"admin\",\"password\":\"P@ssw0rd\"}"
 
 # 自动带 Cookie 查询当前用户
 curl -b cookies.txt "http://localhost:8000/api/auth/me"

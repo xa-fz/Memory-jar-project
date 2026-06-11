@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     auth_cookie_samesite: str = "lax"
     cors_origins: str = "http://localhost:5173"
     default_username: str = "admin"
-    default_password: str = "1234"
+    default_password: str = "P@ssw0rd"
 
     @property
     def cors_origin_list(self) -> list[str]:

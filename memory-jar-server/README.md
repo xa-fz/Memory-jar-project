@@ -59,7 +59,7 @@ VECTOR_STORE_PATH=./data/chroma
 CORS_ORIGINS=http://localhost:5173
 JWT_SECRET=memory-jar-dev-secret-change-me
 DEFAULT_USERNAME=admin
-DEFAULT_PASSWORD=1234
+DEFAULT_PASSWORD=P@ssw0rd
 ```
 
 首次启动会自动创建 SQLite 表，并在无用户时创建默认账号（用户名/密码见上，可通过环境变量修改）。
@@ -140,14 +140,14 @@ GET /health
 ```bash
 curl -c cookies.txt -X POST "http://localhost:8000/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d "{\"username\":\"admin\",\"password\":\"1234\"}"
+  -d "{\"username\":\"admin\",\"password\":\"P@ssw0rd\"}"
 
 curl -b cookies.txt "http://localhost:8000/api/auth/me"
 
 curl -b cookies.txt -X POST "http://localhost:8000/api/auth/logout"
 ```
 
-默认开发账号：`admin` / `1234`（可通过 `.env` 的 `DEFAULT_USERNAME`、`DEFAULT_PASSWORD` 修改，仅首次初始化、库中无用户时生效）。
+默认开发账号：`admin` / `P@ssw0rd`（可通过 `.env` 的 `DEFAULT_USERNAME`、`DEFAULT_PASSWORD` 修改，仅首次初始化、库中无用户时生效）。
 
 ### 文档
 

@@ -4,6 +4,19 @@ const messages = {
   'app.tagline': 'Store everything, recall anytime',
 
   'auth.loginPrompt': 'Sign in',
+  'auth.logout': 'Sign out',
+  'auth.logoutSuccess': 'Signed out successfully',
+  'auth.sessionExpired': 'Session expired. Please sign in again.',
+
+  'login.username': 'Username',
+  'login.usernamePlaceholder': 'Enter your username',
+  'login.password': 'Password',
+  'login.passwordPlaceholder': 'Enter your password',
+  'login.submit': 'Sign in',
+  'login.success': 'Signed in successfully',
+  'login.hint': 'Sign in to store and recall your memories',
+  'login.error': 'Invalid username or password',
+  'login.errorNetwork': 'Cannot reach the server. Is the backend running?',
 
   'nav.chat': 'Chat',
   'nav.documents': 'Documents',

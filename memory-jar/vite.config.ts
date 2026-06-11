@@ -9,4 +9,14 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      // 开发环境：/mj/* → Memory Jar 后端 /api/*
+      '/mj': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/mj/, '/api'),
+      },
+    },
+  },
 })

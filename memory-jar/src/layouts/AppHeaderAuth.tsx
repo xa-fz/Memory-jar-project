@@ -1,35 +1,37 @@
-import { Group, Text, ThemeIcon, UnstyledButton } from '@mantine/core'
-import { IconUser } from '@tabler/icons-react'
+import { Group, Menu, Text, ThemeIcon, UnstyledButton } from '@mantine/core'
+import { IconLogout, IconUser } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
-
-// TODO: 接入 auth 后替换为 useAuth()
-const mockUser: { name: string } | null = null
+import { useAuth } from '@/context'
 
 export function AppHeaderAuth() {
   const intl = useIntl()
+  const { user, logout } = useAuth()
 
-  const handleClick = () => {
-    // TODO: 打开登录弹窗或跳转登录页
-  }
-
-  const label =
-    mockUser?.name ?? intl.formatMessage({ id: 'auth.loginPrompt' })
+  if (!user) return null
 
   return (
-    <UnstyledButton onClick={handleClick} style={{ flex: 1, minWidth: 0 }}>
-      <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-        <ThemeIcon size={28} radius="xl" variant="light" color="blue">
-          <IconUser size={16} stroke={1.5} />
-        </ThemeIcon>
-        <Text
-          size="sm"
-          fw={500}
-          c={mockUser ? undefined : 'blue'}
-          lineClamp={1}
+    <Menu shadow="md" width={160} position="bottom-start">
+      <Menu.Target>
+        <UnstyledButton style={{ flex: 1, minWidth: 0 }}>
+          <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+            <ThemeIcon size={28} radius="xl" variant="light" color="blue">
+              <IconUser size={16} stroke={1.5} />
+            </ThemeIcon>
+            <Text size="sm" fw={500} lineClamp={1}>
+              {user.username}
+            </Text>
+          </Group>
+        </UnstyledButton>
+      </Menu.Target>
+
+      <Menu.Dropdown>
+        <Menu.Item
+          leftSection={<IconLogout size={16} stroke={1.5} />}
+          onClick={() => void logout()}
         >
-          {label}
-        </Text>
-      </Group>
-    </UnstyledButton>
+          {intl.formatMessage({ id: 'auth.logout' })}
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
   )
 }

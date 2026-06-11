@@ -2,6 +2,19 @@ const messages = {
   'app.tagline': '存入一切，随时召回',
 
   'auth.loginPrompt': '请登录',
+  'auth.logout': '退出登录',
+  'auth.logoutSuccess': '已退出登录',
+  'auth.sessionExpired': '登录已失效，请重新登录',
+
+  'login.username': '账号',
+  'login.usernamePlaceholder': '请输入用户名',
+  'login.password': '密码',
+  'login.passwordPlaceholder': '请输入密码',
+  'login.submit': '登录',
+  'login.success': '登录成功',
+  'login.hint': '登录后即可存入与召回你的记忆',
+  'login.error': '用户名或密码错误',
+  'login.errorNetwork': '无法连接服务器，请确认后端已启动',
 
   'nav.chat': '对话',
   'nav.documents': '文档',

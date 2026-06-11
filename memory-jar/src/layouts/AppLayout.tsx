@@ -12,27 +12,28 @@ import {
   IconFileText,
   IconMessageCircle,
 } from '@tabler/icons-react'
-import type { ReactNode } from 'react'
 import { useIntl } from 'react-intl'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { LanguageSwitcher } from '@/i18n/LanguageSwitcher'
 import type { PageId } from '@/types'
 import { recentChats } from '@/data/mock'
 import { AppHeaderAuth } from './AppHeaderAuth'
 
-interface AppLayoutProps {
-  activePage: PageId
-  onNavigate: (page: PageId) => void
-  children: ReactNode
-}
-
-const navItems: { id: PageId; labelId: 'nav.chat' | 'nav.documents' | 'nav.history'; icon: typeof IconMessageCircle }[] = [
-  { id: 'chat', labelId: 'nav.chat', icon: IconMessageCircle },
-  { id: 'documents', labelId: 'nav.documents', icon: IconFileText },
-  { id: 'history', labelId: 'nav.history', icon: IconClock },
+const navItems: {
+  id: PageId
+  path: string
+  labelId: 'nav.chat' | 'nav.documents' | 'nav.history'
+  icon: typeof IconMessageCircle
+}[] = [
+  { id: 'chat', path: '/chat', labelId: 'nav.chat', icon: IconMessageCircle },
+  { id: 'documents', path: '/documents', labelId: 'nav.documents', icon: IconFileText },
+  { id: 'history', path: '/history', labelId: 'nav.history', icon: IconClock },
 ]
 
-export function AppLayout({ activePage, onNavigate, children }: AppLayoutProps) {
+export function AppLayout() {
   const intl = useIntl()
+  const location = useLocation()
+  const navigate = useNavigate()
 
   return (
     <AppShell
@@ -69,13 +70,13 @@ export function AppLayout({ activePage, onNavigate, children }: AppLayoutProps) 
           <Divider />
 
           <Stack gap={4}>
-            {navItems.map(({ id, labelId, icon: Icon }) => (
+            {navItems.map(({ path, labelId, icon: Icon }) => (
               <NavLink
-                key={id}
+                key={path}
                 label={intl.formatMessage({ id: labelId })}
                 leftSection={<Icon size={18} stroke={1.5} />}
-                active={activePage === id}
-                onClick={() => onNavigate(id)}
+                active={location.pathname === path}
+                onClick={() => navigate(path)}
                 variant="light"
               />
             ))}
@@ -95,7 +96,7 @@ export function AppLayout({ activePage, onNavigate, children }: AppLayoutProps) 
       </AppShell.Navbar>
 
       <AppShell.Main bg="gray.0" style={{ display: 'flex', flexDirection: 'column' }}>
-        {children}
+        <Outlet />
       </AppShell.Main>
     </AppShell>
   )
