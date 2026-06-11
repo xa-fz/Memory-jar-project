@@ -1,5 +1,5 @@
-import type { ApiResponse, HttpOptions } from './types'
-import { HttpError } from './types'
+import type { ApiResponse, HttpOptions } from '@/types'
+import { HttpError } from '@/types'
 
 const API_PREFIX = '/mj'
 
@@ -8,7 +8,7 @@ function buildUrl(path: string) {
   return `${API_PREFIX}${normalized}`
 }
 
-/** 统一请求：默认带 Cookie，JSON  body 自动序列化 */
+/** 统一请求：默认带 Cookie，JSON body 自动序列化 */
 export async function httpRequest<T = unknown>(
   path: string,
   options: HttpOptions = {},

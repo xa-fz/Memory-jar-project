@@ -9,7 +9,9 @@ import {
 import { useIntl } from 'react-intl'
 import { useNavigate } from 'react-router-dom'
 import { httpGet, httpPost, useMessageTip } from '@/components'
-import type { AuthUser, FetchMeResult } from './auth.types'
+import type { AuthUser } from '@/types'
+
+type FetchMeResult = 'ok' | 'unauthorized' | 'error'
 
 interface AuthContextValue {
   user: AuthUser | null
@@ -78,5 +80,3 @@ export function useAuth() {
   }
   return ctx
 }
-
-export type { AuthUser, FetchMeResult } from './auth.types'

@@ -1,2 +1,2 @@
 export { UploadModal } from './UploadModal'
-export type { UploadModalProps } from './types'
+export type { UploadModalProps } from './UploadModal'

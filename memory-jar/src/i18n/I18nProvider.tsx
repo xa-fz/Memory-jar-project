@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { IntlProvider } from 'react-intl'
+import type { Locale } from '@/types'
 import enUS from './locales/en-US'
 import zhCN from './locales/zh-CN'
-import type { Locale } from './types'
 
 const STORAGE_KEY = 'memory-jar-locale'
 
