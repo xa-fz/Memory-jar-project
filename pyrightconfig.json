@@ -1,0 +1,12 @@
+{
+  "executionEnvironments": [
+    {
+      "root": "memory-jar-server",
+      "extraPaths": ["memory-jar-server"],
+      "venvPath": "memory-jar-server",
+      "venv": ".venv",
+      "pythonVersion": "3.11"
+    }
+  ],
+  "typeCheckingMode": "basic"
+}

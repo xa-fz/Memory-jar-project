@@ -23,6 +23,7 @@ Monorepo：[Memory-jar-project](https://github.com/xa-fz/Memory-jar-project)
 |------|------|
 | [jar-docs/README.md](../jar-docs/README.md) | 文档目录索引 |
 | [jar-docs/dev.md](../jar-docs/dev.md) | 产品概述、功能范围、版本计划、数据库设计 |
+| [docs/database.md](./docs/database.md) | SQLite 连接说明、DBeaver 使用、SQLite vs PostgreSQL |
 
 ---
 
@@ -56,7 +57,12 @@ APP_PORT=8000
 DATABASE_URL=sqlite:///./data/memory_jar.db
 VECTOR_STORE_PATH=./data/chroma
 CORS_ORIGINS=http://localhost:5173
+JWT_SECRET=memory-jar-dev-secret-change-me
+DEFAULT_USERNAME=admin
+DEFAULT_PASSWORD=1234
 ```
+
+首次启动会自动创建 SQLite 表，并在无用户时创建默认账号（用户名/密码见上，可通过环境变量修改）。
 
 ### 3. 初始化并启动
 
@@ -119,6 +125,30 @@ memory-jar-server/
 GET /health
 ```
 
+### 认证
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/auth/login` | 登录，写入 HttpOnly Cookie |
+| POST | `/api/auth/logout` | 登出，清除 Cookie |
+| GET | `/api/auth/me` | 当前用户信息（自动读 Cookie） |
+
+登录成功后，JWT 写入 Cookie（`access_token`），后续请求浏览器会自动携带，无需手动传 Token。Swagger（`/docs`）在同域下登录后可直接调 `/me`。
+
+**curl 示例**（用 cookie 文件模拟浏览器）：
+
+```bash
+curl -c cookies.txt -X POST "http://localhost:8000/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"admin\",\"password\":\"1234\"}"
+
+curl -b cookies.txt "http://localhost:8000/api/auth/me"
+
+curl -b cookies.txt -X POST "http://localhost:8000/api/auth/logout"
+```
+
+默认开发账号：`admin` / `1234`（可通过 `.env` 的 `DEFAULT_USERNAME`、`DEFAULT_PASSWORD` 修改，仅首次初始化、库中无用户时生效）。
+
 ### 文档
 
 | 方法 | 路径 | 说明 |
@@ -161,6 +191,7 @@ Content-Type: application/json
 - [x] FastAPI 基础框架
 - [x] CORS、健康检查
 - [x] 文档上传 API（`POST /api/documents/upload/`）
+- [x] 用户登录 / 登出 / 当前用户信息（JWT）
 - [ ] 文档列表 / 详情 / 删除 API
 - [ ] RAG 检索链路
 - [ ] `/api/chat` 问答
