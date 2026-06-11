@@ -15,7 +15,7 @@ from app.db.database import get_db
 from app.db.models import User
 from app.schemas.auth import LoginRequest, UserInfo
 
-router = APIRouter(prefix="/api/auth", tags=["Auth"])
+router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 def _user_info(user: User) -> dict:
@@ -26,7 +26,7 @@ def _user_info(user: User) -> dict:
     ).model_dump()
 
 
-@router.post("/login", summary="登录")
+@router.post("/login")
 def login(body: LoginRequest, response: Response, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == body.username).first()
     if not user or not verify_password(body.password, user.password_hash):
@@ -37,7 +37,7 @@ def login(body: LoginRequest, response: Response, db: Session = Depends(get_db))
     return success_response(data={"user": _user_info(user)})
 
 
-@router.post("/logout", summary="登出")
+@router.post("/logout")
 def logout(
     request: Request,
     response: Response,
@@ -52,6 +52,6 @@ def logout(
     return success_response(message="Logged out")
 
 
-@router.get("/me", summary="当前用户信息")
+@router.get("/me", summary="Get current user info")
 def get_me(current_user: User = Depends(get_current_user)):
     return success_response(data=_user_info(current_user))
