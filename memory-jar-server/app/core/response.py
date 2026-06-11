@@ -53,6 +53,14 @@ def error_response(message: str = "error", code: int = 400, data: dict = None) -
         "data": data
     }
 
+
+def json_error(message: str = "error", code: int = 400, data: dict = None) -> JSONResponse:
+    """错误响应（HTTP 状态码与 body.code 一致）"""
+    return JSONResponse(
+        status_code=code,
+        content=error_response(message=message, code=code, data=data),
+    )
+
 def register_exception_handlers(app: FastAPI):
     """注册全局异常处理器"""
     

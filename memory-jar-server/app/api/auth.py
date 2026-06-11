@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Header, Request, Response
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
-from app.core.response import error_response, success_response
+from app.core.response import error_response, json_error, success_response
 from app.core.security import (
     clear_auth_cookie,
     create_access_token,
@@ -30,7 +30,7 @@ def _user_info(user: User) -> dict:
 def login(body: LoginRequest, response: Response, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == body.username).first()
     if not user or not verify_password(body.password, user.password_hash):
-        return error_response(message="Invalid username or password", code=401)
+        return json_error(message="Invalid username or password", code=401)
 
     access_token = create_access_token(user_id=user.id, username=user.username)
     set_auth_cookie(response, access_token)
@@ -45,7 +45,7 @@ def logout(
 ):
     token = extract_access_token(request, authorization)
     if not token:
-        return error_response(message="Not authenticated", code=401)
+        return json_error(message="Not authenticated", code=401)
 
     revoke_token(token)
     clear_auth_cookie(response)
