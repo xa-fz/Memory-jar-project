@@ -11,13 +11,23 @@ import {
   Text,
   ThemeIcon,
   Title,
+  Tooltip,
 } from '@mantine/core'
 import { MIME_TYPES } from '@mantine/dropzone'
 import { useDisclosure } from '@mantine/hooks'
-import { IconDownload, IconEye, IconFileText, IconTrash, IconUpload } from '@tabler/icons-react'
+import { IconDownload, IconEye, IconFileText, IconRefresh, IconTrash, IconUpload } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
 import type { DocumentItem } from '@/types'
-import { httpDelete, httpDownload, httpGet, httpUpload, UploadModal, useMessageTip } from '@/components'
+import {
+  httpDelete,
+  httpDownload,
+  httpGet,
+  httpPutUpload,
+  httpUpload,
+  Modal,
+  UploadModal,
+  useMessageTip,
+} from '@/components'
 import { DocumentDetailModal } from './DocumentDetailModal'
 import theme from '@/styles/appTheme.module.css'
 
@@ -25,6 +35,24 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   return `${(bytes / 1024).toFixed(1)} KB`
 }
+
+const DOCUMENT_ACCEPT = [
+  MIME_TYPES.pdf,
+  MIME_TYPES.csv,
+  MIME_TYPES.xls,
+  MIME_TYPES.xlsx,
+  MIME_TYPES.png,
+  MIME_TYPES.jpeg,
+  MIME_TYPES.gif,
+  MIME_TYPES.webp,
+  'text/plain',
+  'text/markdown',
+  'application/json',
+  'application/xml',
+  'text/xml',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+] as const
 
 export function DocumentsPage() {
   const intl = useIntl()
@@ -34,6 +62,10 @@ export function DocumentsPage() {
   const [uploadOpened, { open: openUpload, close: closeUpload }] = useDisclosure(false)
   const [detailOpened, { open: openDetail, close: closeDetail }] = useDisclosure(false)
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<DocumentItem | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [updatingDoc, setUpdatingDoc] = useState<DocumentItem | null>(null)
+  const [detailRefreshKey, setDetailRefreshKey] = useState(0)
   const detailOpenedRef = useRef(detailOpened)
   detailOpenedRef.current = detailOpened
 
@@ -90,11 +122,13 @@ export function DocumentsPage() {
   }
 
   const handleDelete = async (id: number) => {
+    setDeleting(true)
     try {
       const body = await httpDelete(`/documents/${id}`)
       if (body.code === 200) {
         setDocuments((prev) => prev.filter((doc) => doc.id !== id))
         if (selectedDocId === id) handleCloseDetail()
+        setPendingDelete(null)
         showTip({
           message: intl.formatMessage({ id: 'documents.deleteSuccess' }),
           type: 'success',
@@ -110,12 +144,15 @@ export function DocumentsPage() {
         message: intl.formatMessage({ id: 'documents.deleteError' }),
         type: 'error',
       })
+    } finally {
+      setDeleting(false)
     }
   }
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (file: File, options: { enableSummary: boolean }) => {
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('enable_summary', options.enableSummary ? 'true' : 'false')
 
     try {
       const body = await httpUpload<{ id: number; title: string; file_type: string }>(
@@ -142,6 +179,49 @@ export function DocumentsPage() {
       }
       showTip({
         message: intl.formatMessage({ id: 'documents.uploadError' }),
+        type: 'error',
+      })
+      throw err
+    }
+  }
+
+  const handleUpdate = async (file: File, options: { enableSummary: boolean }) => {
+    if (!updatingDoc) return
+
+    const docId = updatingDoc.id
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('enable_summary', options.enableSummary ? 'true' : 'false')
+
+    try {
+      const body = await httpPutUpload<{ id: number; title: string; file_type: string }>(
+        `/documents/${docId}`,
+        formData,
+      )
+
+      if (body.code !== 200) {
+        showTip({
+          message: body.message ?? intl.formatMessage({ id: 'documents.updateError' }),
+          type: 'error',
+        })
+        throw new Error('update failed')
+      }
+
+      showTip({
+        message: intl.formatMessage({ id: 'documents.updateSuccess' }),
+        type: 'success',
+      })
+      setUpdatingDoc(null)
+      await fetchDocuments()
+      if (selectedDocId === docId) {
+        setDetailRefreshKey((key) => key + 1)
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message === 'update failed') {
+        throw err
+      }
+      showTip({
+        message: intl.formatMessage({ id: 'documents.updateError' }),
         type: 'error',
       })
       throw err
@@ -220,6 +300,21 @@ export function DocumentsPage() {
                     >
                       <IconDownload size={18} />
                     </ActionIcon>
+                    <Tooltip
+                      label={intl.formatMessage({ id: 'documents.updateTooltip' })}
+                      withArrow
+                      multiline
+                      w={220}
+                    >
+                      <ActionIcon
+                        variant="subtle"
+                        color="orange"
+                        aria-label={intl.formatMessage({ id: 'documents.updateAria' })}
+                        onClick={() => setUpdatingDoc(doc)}
+                      >
+                        <IconRefresh size={18} />
+                      </ActionIcon>
+                    </Tooltip>
                     <ActionIcon
                       variant="subtle"
                       color="indigo"
@@ -232,7 +327,7 @@ export function DocumentsPage() {
                       variant="subtle"
                       color="red"
                       aria-label={intl.formatMessage({ id: 'documents.deleteAria' })}
-                      onClick={() => void handleDelete(doc.id)}
+                      onClick={() => setPendingDelete(doc)}
                     >
                       <IconTrash size={18} />
                     </ActionIcon>
@@ -254,33 +349,59 @@ export function DocumentsPage() {
         opened={uploadOpened}
         onClose={closeUpload}
         onUpload={handleUpload}
+        showSummarySwitch
         title={intl.formatMessage({ id: 'documents.upload' })}
         acceptHint={intl.formatMessage({ id: 'documents.acceptHint' })}
-        accept={[
-          MIME_TYPES.pdf,
-          MIME_TYPES.csv,
-          MIME_TYPES.xls,
-          MIME_TYPES.xlsx,
-          MIME_TYPES.png,
-          MIME_TYPES.jpeg,
-          MIME_TYPES.gif,
-          MIME_TYPES.webp,
-          'text/plain',
-          'text/markdown',
-          'application/json',
-          'application/xml',
-          'text/xml',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ]}
+        accept={[...DOCUMENT_ACCEPT]}
+      />
+
+      <UploadModal
+        opened={updatingDoc !== null}
+        onClose={() => setUpdatingDoc(null)}
+        onUpload={handleUpdate}
+        showSummarySwitch
+        title={intl.formatMessage({ id: 'documents.updateTitle' })}
+        warningText={intl.formatMessage({ id: 'documents.updateWarning' })}
+        confirmLabel={intl.formatMessage({ id: 'documents.updateConfirm' })}
+        acceptHint={intl.formatMessage({ id: 'documents.acceptHint' })}
+        accept={[...DOCUMENT_ACCEPT]}
       />
 
       <DocumentDetailModal
         opened={detailOpened}
         documentId={selectedDocId}
+        refreshKey={detailRefreshKey}
         onClose={handleCloseDetail}
         onExited={handleDetailExited}
       />
+
+      <Modal
+        opened={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        title={intl.formatMessage({ id: 'documents.deleteConfirmTitle' })}
+        width={440}
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            {intl.formatMessage(
+              { id: 'documents.deleteConfirmMessage' },
+              { name: pendingDelete?.title ?? '' },
+            )}
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setPendingDelete(null)}>
+              {intl.formatMessage({ id: 'documents.deleteCancel' })}
+            </Button>
+            <Button
+              color="red"
+              loading={deleting}
+              onClick={() => pendingDelete && void handleDelete(pendingDelete.id)}
+            >
+              {intl.formatMessage({ id: 'documents.deleteConfirm' })}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </>
   )
 }

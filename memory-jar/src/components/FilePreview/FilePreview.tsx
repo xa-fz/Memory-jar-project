@@ -131,8 +131,13 @@ export function FilePreview({
   }
 
   return (
-    <div className={clsx(classes.frame, className)}>
-      <ScrollArea h={height} type="auto" offsetScrollbars className={classes.scroll}>
+    <div className={clsx(classes.frame, className)} style={{ height }}>
+      <ScrollArea
+        className={classes.scrollArea}
+        h="100%"
+        type="scroll"
+        scrollbarSize={8}
+      >
         {renderPreview()}
       </ScrollArea>
     </div>

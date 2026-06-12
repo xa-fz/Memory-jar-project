@@ -26,6 +26,7 @@ export interface DocumentDetail {
   title: string
   file_type: string
   content: string
+  summary?: string | null
   file_size: number
   date: string
 }

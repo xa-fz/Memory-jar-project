@@ -1,12 +1,12 @@
 .frame {
+  height: 100%;
   border: 1px solid var(--mantine-color-gray-3);
   border-radius: var(--mantine-radius-md);
   background: var(--mantine-color-gray-0);
-  overflow: hidden;
 }
 
-.scroll {
-  overflow: auto;
+.scrollArea {
+  height: 100%;
 }
 
 .textContent {

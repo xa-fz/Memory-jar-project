@@ -1,0 +1,29 @@
+.summaryBox {
+  padding: var(--mantine-spacing-md);
+  border: 1px solid var(--mantine-color-indigo-2);
+  border-radius: var(--mantine-radius-md);
+  background: linear-gradient(
+    135deg,
+    rgb(238 242 255 / 80%) 0%,
+    rgb(245 243 255 / 80%) 100%
+  );
+}
+
+.summaryTitle {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  color: var(--mantine-color-indigo-8);
+}
+
+.summaryText {
+  margin: 0;
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.7;
+  color: var(--mantine-color-dark-6);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.previewWrap {
+  height: var(--preview-height);
+}

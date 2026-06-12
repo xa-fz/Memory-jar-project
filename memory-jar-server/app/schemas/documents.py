@@ -14,6 +14,7 @@ class DocumentDetail(BaseModel):
     title: str
     file_type: str
     content: str
+    summary: str | None = None
     file_size: int
     date: str
 

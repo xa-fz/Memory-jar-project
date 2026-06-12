@@ -32,6 +32,8 @@ def _migrate_schema() -> None:
                     "ALTER TABLE documents ADD COLUMN file_type VARCHAR(20) NOT NULL DEFAULT ''"
                 )
             )
+        if "summary" not in columns:
+            conn.execute(text("ALTER TABLE documents ADD COLUMN summary TEXT"))
 
 
 def _seed_default_user(db: Session) -> None:

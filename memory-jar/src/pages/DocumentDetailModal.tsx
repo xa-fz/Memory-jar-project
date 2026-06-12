@@ -4,10 +4,12 @@ import { IconDownload } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
 import { FilePreview, httpDownload, httpGet, Modal, useMessageTip } from '@/components'
 import type { DocumentDetail } from '@/types'
+import classes from './DocumentDetailModal.module.css'
 
 export interface DocumentDetailModalProps {
   opened: boolean
   documentId: number | null
+  refreshKey?: number
   onClose: () => void
   /** 关闭动画结束后再清理外部状态（如 selectedDocId） */
   onExited?: () => void
@@ -15,6 +17,7 @@ export interface DocumentDetailModalProps {
 
 const MODAL_WIDTH = 960
 const PREVIEW_HEIGHT = 560
+const PREVIEW_HEIGHT_WITH_SUMMARY = 440
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -24,6 +27,7 @@ function formatFileSize(bytes: number): string {
 export function DocumentDetailModal({
   opened,
   documentId,
+  refreshKey = 0,
   onClose,
   onExited,
 }: DocumentDetailModalProps) {
@@ -71,7 +75,7 @@ export function DocumentDetailModal({
     return () => {
       cancelled = true
     }
-  }, [opened, documentId, intl, showTip, onClose])
+  }, [opened, documentId, refreshKey, intl, showTip, onClose])
 
   const handleDownload = async () => {
     if (!detail) return
@@ -97,6 +101,7 @@ export function DocumentDetailModal({
       onClose={onClose}
       title={detail?.title ?? intl.formatMessage({ id: 'documents.detailTitle' })}
       width={MODAL_WIDTH}
+      height={680}
       transitionProps={{ onExited: handleExitTransitionEnd }}
     >
       {loading ? (
@@ -132,13 +137,33 @@ export function DocumentDetailModal({
             </ActionIcon>
           </Group>
 
-          <FilePreview
-            fileType={detail.file_type}
-            content={detail.content}
-            filePath={`/documents/${detail.id}/file`}
-            fileName={detail.title}
-            height={PREVIEW_HEIGHT}
-          />
+          {detail.summary?.trim() ? (
+            <Stack gap={6} className={classes.summaryBox}>
+              <Text className={classes.summaryTitle}>
+                {intl.formatMessage({ id: 'documents.summaryTitle' })}
+              </Text>
+              <Text component="p" className={classes.summaryText}>
+                {detail.summary}
+              </Text>
+            </Stack>
+          ) : null}
+
+          <div
+            className={classes.previewWrap}
+            style={{
+              ['--preview-height' as string]: `${
+                detail.summary?.trim() ? PREVIEW_HEIGHT_WITH_SUMMARY : PREVIEW_HEIGHT
+              }px`,
+            }}
+          >
+            <FilePreview
+              fileType={detail.file_type}
+              content={detail.content}
+              filePath={`/documents/${detail.id}/file`}
+              fileName={detail.title}
+              height="100%"
+            />
+          </div>
         </Stack>
       ) : null}
     </Modal>

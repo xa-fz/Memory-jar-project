@@ -76,6 +76,14 @@ export function httpUpload<T = unknown>(
   return httpRequest<T>(path, { ...options, method: 'POST', body: formData })
 }
 
+export function httpPutUpload<T = unknown>(
+  path: string,
+  formData: FormData,
+  options?: Omit<HttpOptions, 'method' | 'body'>,
+) {
+  return httpRequest<T>(path, { ...options, method: 'PUT', body: formData })
+}
+
 /** 下载二进制文件（如 PDF、图片），用于预览组件 */
 export async function httpBlob(
   path: string,
