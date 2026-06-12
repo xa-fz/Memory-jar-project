@@ -2,6 +2,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.storage import ensure_upload_root
 from app.core.security import hash_password
 from app.db.database import Base, SessionLocal, engine
 from app.db.models import Document, User
@@ -9,6 +10,7 @@ from app.db.models import Document, User
 
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+    ensure_upload_root()
     _migrate_schema()
     db = SessionLocal()
     try:

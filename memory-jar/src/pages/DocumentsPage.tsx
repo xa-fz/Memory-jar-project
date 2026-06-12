@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActionIcon,
   Badge,
@@ -14,18 +14,28 @@ import {
 } from '@mantine/core'
 import { MIME_TYPES } from '@mantine/dropzone'
 import { useDisclosure } from '@mantine/hooks'
-import { IconFileText, IconTrash, IconUpload } from '@tabler/icons-react'
+import { IconDownload, IconEye, IconFileText, IconTrash, IconUpload } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
 import type { DocumentItem } from '@/types'
-import { httpDelete, httpGet, httpUpload, UploadModal, useMessageTip } from '@/components'
+import { httpDelete, httpDownload, httpGet, httpUpload, UploadModal, useMessageTip } from '@/components'
+import { DocumentDetailModal } from './DocumentDetailModal'
 import theme from '@/styles/appTheme.module.css'
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  return `${(bytes / 1024).toFixed(1)} KB`
+}
 
 export function DocumentsPage() {
   const intl = useIntl()
   const { showTip } = useMessageTip()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [opened, { open, close }] = useDisclosure(false)
+  const [uploadOpened, { open: openUpload, close: closeUpload }] = useDisclosure(false)
+  const [detailOpened, { open: openDetail, close: closeDetail }] = useDisclosure(false)
+  const [selectedDocId, setSelectedDocId] = useState<number | null>(null)
+  const detailOpenedRef = useRef(detailOpened)
+  detailOpenedRef.current = detailOpened
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true)
@@ -53,11 +63,38 @@ export function DocumentsPage() {
     void fetchDocuments()
   }, [fetchDocuments])
 
+  const handleView = (id: number) => {
+    setSelectedDocId(id)
+    openDetail()
+  }
+
+  const handleCloseDetail = useCallback(() => {
+    closeDetail()
+  }, [closeDetail])
+
+  const handleDetailExited = useCallback(() => {
+    if (!detailOpenedRef.current) {
+      setSelectedDocId(null)
+    }
+  }, [])
+
+  const handleDownload = async (doc: DocumentItem) => {
+    try {
+      await httpDownload(`/documents/${doc.id}/download`, doc.title)
+    } catch {
+      showTip({
+        message: intl.formatMessage({ id: 'documents.downloadError' }),
+        type: 'error',
+      })
+    }
+  }
+
   const handleDelete = async (id: number) => {
     try {
       const body = await httpDelete(`/documents/${id}`)
       if (body.code === 200) {
         setDocuments((prev) => prev.filter((doc) => doc.id !== id))
+        if (selectedDocId === id) handleCloseDetail()
         showTip({
           message: intl.formatMessage({ id: 'documents.deleteSuccess' }),
           type: 'success',
@@ -81,7 +118,7 @@ export function DocumentsPage() {
     formData.append('file', file)
 
     try {
-      const body = await httpUpload<{ id: number; title: string }>(
+      const body = await httpUpload<{ id: number; title: string; file_type: string }>(
         '/documents/upload/',
         formData,
       )
@@ -126,7 +163,7 @@ export function DocumentsPage() {
           <Button
             className={theme.primaryBtn}
             leftSection={<IconUpload size={16} />}
-            onClick={open}
+            onClick={openUpload}
           >
             {intl.formatMessage({ id: 'documents.upload' })}
           </Button>
@@ -139,7 +176,15 @@ export function DocumentsPage() {
         ) : (
           <Stack gap="md">
             {documents.map((doc) => (
-              <Card key={doc.id} withBorder padding="lg" radius="md" className={theme.surfaceCard}>
+              <Card
+                key={doc.id}
+                withBorder
+                padding="lg"
+                radius="md"
+                className={theme.surfaceCard}
+                style={{ cursor: 'pointer' }}
+                onClick={() => handleView(doc.id)}
+              >
                 <Group justify="space-between" align="flex-start" wrap="nowrap">
                   <Group align="flex-start" gap="md" wrap="nowrap" style={{ flex: 1 }}>
                     <ThemeIcon size={40} radius="md" variant="light" color="indigo">
@@ -149,13 +194,16 @@ export function DocumentsPage() {
                       <Text fw={600} lineClamp={1}>
                         {doc.title}
                       </Text>
-                      <Text size="sm" c="dimmed" lineClamp={2}>
-                        {doc.preview}
+                      <Text size="sm" c="dimmed">
+                        {intl.formatMessage(
+                          { id: 'documents.fileSize' },
+                          { size: formatFileSize(doc.file_size) },
+                        )}
                       </Text>
                     </Stack>
                   </Group>
 
-                  <Group gap="md" wrap="nowrap">
+                  <Group gap="xs" wrap="nowrap" onClick={(e) => e.stopPropagation()}>
                     {doc.file_type ? (
                       <Badge variant="light" color="indigo">
                         {doc.file_type.replace(/^\./, '').toUpperCase()}
@@ -164,6 +212,22 @@ export function DocumentsPage() {
                     <Badge variant="light" color="gray">
                       {doc.date}
                     </Badge>
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      aria-label={intl.formatMessage({ id: 'documents.downloadAria' })}
+                      onClick={() => void handleDownload(doc)}
+                    >
+                      <IconDownload size={18} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      color="indigo"
+                      aria-label={intl.formatMessage({ id: 'documents.viewAria' })}
+                      onClick={() => handleView(doc.id)}
+                    >
+                      <IconEye size={18} />
+                    </ActionIcon>
                     <ActionIcon
                       variant="subtle"
                       color="red"
@@ -187,8 +251,8 @@ export function DocumentsPage() {
       </Stack>
 
       <UploadModal
-        opened={opened}
-        onClose={close}
+        opened={uploadOpened}
+        onClose={closeUpload}
         onUpload={handleUpload}
         title={intl.formatMessage({ id: 'documents.upload' })}
         acceptHint={intl.formatMessage({ id: 'documents.acceptHint' })}
@@ -197,6 +261,10 @@ export function DocumentsPage() {
           MIME_TYPES.csv,
           MIME_TYPES.xls,
           MIME_TYPES.xlsx,
+          MIME_TYPES.png,
+          MIME_TYPES.jpeg,
+          MIME_TYPES.gif,
+          MIME_TYPES.webp,
           'text/plain',
           'text/markdown',
           'application/json',
@@ -205,6 +273,13 @@ export function DocumentsPage() {
           'application/msword',
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         ]}
+      />
+
+      <DocumentDetailModal
+        opened={detailOpened}
+        documentId={selectedDocId}
+        onClose={handleCloseDetail}
+        onExited={handleDetailExited}
       />
     </>
   )

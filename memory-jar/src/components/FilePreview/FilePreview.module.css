@@ -1,0 +1,98 @@
+.frame {
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-gray-0);
+  overflow: hidden;
+}
+
+.scroll {
+  overflow: auto;
+}
+
+.textContent {
+  margin: 0;
+  padding: var(--mantine-spacing-md);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--mantine-color-dark-7);
+}
+
+.markdown {
+  padding: var(--mantine-spacing-md);
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.7;
+  color: var(--mantine-color-dark-7);
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  margin: 0.75em 0 0.4em;
+  line-height: 1.3;
+}
+
+.markdown p {
+  margin: 0.5em 0;
+}
+
+.markdown pre {
+  overflow: auto;
+  padding: var(--mantine-spacing-sm);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-gray-1);
+}
+
+.markdown code {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 0.92em;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 1.25rem;
+}
+
+.docxHtml {
+  padding: var(--mantine-spacing-md);
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.7;
+  color: var(--mantine-color-dark-7);
+}
+
+.docxHtml p {
+  margin: 0.5em 0;
+}
+
+.imageWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mantine-spacing-md);
+  background: var(--mantine-color-white);
+}
+
+.image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.pdfPages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md);
+  background: var(--mantine-color-gray-1);
+}
+
+.pdfPage {
+  box-shadow: 0 1px 4px rgb(0 0 0 / 12%);
+}
+
+.unsupported {
+  padding: var(--mantine-spacing-md);
+}

@@ -1,8 +1,14 @@
+import mimetypes
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
+from app.core.file_extract import extract_text_content
 from app.core.response import error_response, success_response
+from app.core.storage import delete_document_file, document_file_path, save_document_file
 from app.db.database import get_db
 from app.db.models import Document, User
 from app.schemas.documents import DocumentDetail, DocumentListItem, DocumentUploadData
@@ -20,16 +26,12 @@ ALLOWED_EXTENSIONS = {
     ".xml",
     ".csv",
     ".xlsx",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
 }
-
-PREVIEW_MAX_LEN = 120
-
-
-def _preview(text: str) -> str:
-    normalized = " ".join(text.split())
-    if len(normalized) <= PREVIEW_MAX_LEN:
-        return normalized
-    return f"{normalized[:PREVIEW_MAX_LEN]}..."
 
 
 def _format_date(doc: Document) -> str:
@@ -42,7 +44,7 @@ def _to_list_item(doc: Document) -> dict:
         id=doc.id,
         title=doc.title,
         file_type=doc.file_type,
-        preview=_preview(doc.content),
+        file_size=doc.file_size,
         date=_format_date(doc),
     ).model_dump()
 
@@ -58,14 +60,35 @@ def _to_detail(doc: Document) -> dict:
     ).model_dump()
 
 
-def _decode_text(content: bytes) -> str:
-    try:
-        return content.decode("utf-8")
-    except UnicodeDecodeError:
-        try:
-            return content.decode("gbk")
-        except UnicodeDecodeError:
-            return content.decode("utf-8", errors="ignore")
+def _guess_media_type(file_type: str) -> str:
+    ext = file_type if file_type.startswith(".") else f".{file_type}"
+    media_type, _ = mimetypes.guess_type(f"file{ext}")
+    return media_type or "application/octet-stream"
+
+
+def _get_owned_document(
+    document_id: int,
+    current_user: User,
+    db: Session,
+) -> Document | None:
+    return (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.user_id == current_user.id)
+        .first()
+    )
+
+
+def _build_file_response(doc: Document, user_id: int, *, attachment: bool):
+    path = document_file_path(user_id, doc.id, doc.file_type)
+    if not path.is_file():
+        return error_response(message="Original file not found", code=404)
+
+    return FileResponse(
+        path=Path(path),
+        media_type=_guess_media_type(doc.file_type),
+        filename=doc.title,
+        content_disposition_type="attachment" if attachment else "inline",
+    )
 
 
 @router.get("/")
@@ -82,17 +105,39 @@ def list_documents(
     return success_response(data=[_to_list_item(doc) for doc in docs])
 
 
+@router.get("/{document_id}/file")
+def get_document_file(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    doc = _get_owned_document(document_id, current_user, db)
+    if not doc:
+        return error_response(message="Document not found", code=404)
+
+    return _build_file_response(doc, current_user.id, attachment=False)
+
+
+@router.get("/{document_id}/download")
+def download_document(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    doc = _get_owned_document(document_id, current_user, db)
+    if not doc:
+        return error_response(message="Document not found", code=404)
+
+    return _build_file_response(doc, current_user.id, attachment=True)
+
+
 @router.get("/{document_id}")
 def get_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    doc = (
-        db.query(Document)
-        .filter(Document.id == document_id, Document.user_id == current_user.id)
-        .first()
-    )
+    doc = _get_owned_document(document_id, current_user, db)
     if not doc:
         return error_response(message="Document not found", code=404)
 
@@ -105,14 +150,11 @@ def delete_document(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    doc = (
-        db.query(Document)
-        .filter(Document.id == document_id, Document.user_id == current_user.id)
-        .first()
-    )
+    doc = _get_owned_document(document_id, current_user, db)
     if not doc:
         return error_response(message="Document not found", code=404)
 
+    delete_document_file(current_user.id, doc.id, doc.file_type)
     db.delete(doc)
     db.commit()
     return success_response(message="success")
@@ -135,9 +177,13 @@ async def upload_document(
 
     try:
         raw = await file.read()
-        text_content = _decode_text(raw)
+        if not raw:
+            return error_response(message="File content is empty", code=400)
+        text_content = extract_text_content(raw, ext)
         if not text_content.strip():
             return error_response(message="File content is empty", code=400)
+    except ValueError as exc:
+        return error_response(message=str(exc), code=400)
     except Exception as exc:
         return error_response(message=f"Failed to read file: {exc}", code=500)
 
@@ -151,6 +197,13 @@ async def upload_document(
     db.add(doc)
     db.commit()
     db.refresh(doc)
+
+    try:
+        save_document_file(current_user.id, doc.id, ext, raw)
+    except Exception as exc:
+        db.delete(doc)
+        db.commit()
+        return error_response(message=f"Failed to save file: {exc}", code=500)
 
     data = DocumentUploadData(id=doc.id, title=doc.title, file_type=doc.file_type).model_dump()
     return success_response(data=data, message="success")

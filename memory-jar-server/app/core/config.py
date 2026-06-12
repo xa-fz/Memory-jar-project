@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     default_username: str = "admin"
     default_password: str = "P@ssw0rd"
+    upload_dir: str = "data/uploads"
 
     @property
     def cors_origin_list(self) -> list[str]:

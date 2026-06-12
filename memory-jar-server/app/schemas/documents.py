@@ -5,7 +5,7 @@ class DocumentListItem(BaseModel):
     id: int
     title: str
     file_type: str
-    preview: str
+    file_size: int
     date: str
 
 

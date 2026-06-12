@@ -75,3 +75,41 @@ export function httpUpload<T = unknown>(
 ) {
   return httpRequest<T>(path, { ...options, method: 'POST', body: formData })
 }
+
+/** 下载二进制文件（如 PDF、图片），用于预览组件 */
+export async function httpBlob(
+  path: string,
+  options?: Omit<HttpOptions, 'method' | 'body'>,
+): Promise<Blob> {
+  let response: Response
+  try {
+    response = await fetch(buildUrl(path), {
+      method: 'GET',
+      credentials: options?.credentials ?? 'include',
+      headers: options?.headers,
+    })
+  } catch {
+    throw new HttpError('network')
+  }
+
+  if (!response.ok) {
+    throw new HttpError('network')
+  }
+
+  return response.blob()
+}
+
+/** 触发浏览器下载原文件 */
+export async function httpDownload(
+  path: string,
+  filename: string,
+  options?: Omit<HttpOptions, 'method' | 'body'>,
+): Promise<void> {
+  const blob = await httpBlob(path, options)
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}

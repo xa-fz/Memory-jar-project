@@ -16,10 +16,14 @@
     "@mantine/hooks": "^7.17.8",
     "@tabler/icons-react": "^3.34.0",
     "clsx": "^2.1.1",
+    "mammoth": "^1.12.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-intl": "^10.1.13",
-    "react-router-dom": "^7.17.0"
+    "react-markdown": "^10.1.0",
+    "react-pdf": "^10.4.1",
+    "react-router-dom": "^7.17.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

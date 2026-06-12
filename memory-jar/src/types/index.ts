@@ -16,7 +16,17 @@ export interface DocumentItem {
   id: number
   title: string
   file_type: string
-  preview: string
+  file_size: number
+  date: string
+}
+
+/** 文档详情 */
+export interface DocumentDetail {
+  id: number
+  title: string
+  file_type: string
+  content: string
+  file_size: number
   date: string
 }
 
