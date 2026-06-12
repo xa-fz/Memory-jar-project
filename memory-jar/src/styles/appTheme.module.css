@@ -1,0 +1,85 @@
+/* light inner-app theme — subtle login-inspired accents only */
+
+.pageRoot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.brandTitle {
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 55%, #0891b2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #312e81 0%, #4f46e5 45%, #0e7490 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pageSubtitle {
+  margin-top: 4px;
+  font-size: 0.875rem;
+  color: var(--mantine-color-dimmed);
+}
+
+.surfacePanel {
+  background: var(--mantine-color-white);
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-md);
+  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.06);
+}
+
+.surfaceCard {
+  background: var(--mantine-color-white);
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-md);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.surfaceCard:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.08);
+}
+
+.primaryBtn {
+  background: linear-gradient(135deg, #0891b2 0%, #6366f1 55%, #8b5cf6 100%) !important;
+  border: none !important;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+.primaryBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35) !important;
+}
+
+.accentTopLine {
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(8, 145, 178, 0.55),
+    rgba(99, 102, 241, 0.55),
+    transparent
+  );
+  border-radius: 2px;
+  pointer-events: none;
+}

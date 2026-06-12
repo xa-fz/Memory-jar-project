@@ -17,6 +17,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { LanguageSwitcher } from '@/i18n/LanguageSwitcher'
 import type { PageId } from '@/types'
 import { recentChats } from '@/data/mock'
+import theme from '@/styles/appTheme.module.css'
 import { AppHeaderAuth } from './AppHeaderAuth'
 
 const navItems: {
@@ -57,7 +58,7 @@ export function AppLayout() {
                 >
                   🧠
                 </Text>
-                <Title order={4} lh={1.2}>
+                <Title order={4} lh={1.2} className={theme.brandTitle}>
                   Memory Jar
                 </Title>
               </Group>
@@ -78,6 +79,7 @@ export function AppLayout() {
                 active={location.pathname === path}
                 onClick={() => navigate(path)}
                 variant="light"
+                color="indigo"
               />
             ))}
           </Stack>

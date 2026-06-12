@@ -17,6 +17,7 @@ import { useIntl } from 'react-intl'
 import type { DocumentItem } from '@/types'
 import { UploadModal } from '@/components'
 import { initialDocuments } from '@/data/mock'
+import theme from '@/styles/appTheme.module.css'
 
 function formatDate(date = new Date()) {
   return date.toISOString().slice(0, 10)
@@ -46,16 +47,18 @@ export function DocumentsPage() {
 
   return (
     <>
-      <Stack gap="lg">
+      <Stack gap="lg" className={theme.pageRoot}>
         <Group justify="space-between" align="flex-start">
           <div>
-            <Title order={2}>{intl.formatMessage({ id: 'documents.title' })}</Title>
+            <Title order={2} className={theme.pageTitle}>
+              {intl.formatMessage({ id: 'documents.title' })}
+            </Title>
             <Text size="sm" c="dimmed" mt={4}>
               {intl.formatMessage({ id: 'documents.subtitle' })}
             </Text>
           </div>
           <Button
-            color="blue"
+            className={theme.primaryBtn}
             leftSection={<IconUpload size={16} />}
             onClick={open}
           >
@@ -65,10 +68,10 @@ export function DocumentsPage() {
 
         <Stack gap="md">
           {documents.map((doc) => (
-            <Card key={doc.id} withBorder padding="lg" radius="md">
+            <Card key={doc.id} withBorder padding="lg" radius="md" className={theme.surfaceCard}>
               <Group justify="space-between" align="flex-start" wrap="nowrap">
                 <Group align="flex-start" gap="md" wrap="nowrap" style={{ flex: 1 }}>
-                  <ThemeIcon size={40} radius="md" variant="light" color="blue">
+                  <ThemeIcon size={40} radius="md" variant="light" color="indigo">
                     <IconFileText size={22} />
                   </ThemeIcon>
                   <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>

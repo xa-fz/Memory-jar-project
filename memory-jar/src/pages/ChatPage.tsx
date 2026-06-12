@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Group,
-  Loader,
   Paper,
   ScrollArea,
   Stack,
@@ -16,6 +15,24 @@ import { IconBrain, IconSend } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
 import type { ChatMessage } from '@/types'
 import { initialMessages } from '@/data/mock'
+import theme from '@/styles/appTheme.module.css'
+import classes from './ChatPage.module.css'
+
+function NeuralThinking({ label }: { label: string }) {
+  return (
+    <div className={classes.thinking}>
+      <svg className={classes.thinkingSvg} viewBox="0 0 48 14" aria-hidden>
+        <line className={classes.thinkingLine} x1="4" y1="7" x2="44" y2="7" />
+        <circle className={classes.thinkingNode} cx="10" cy="7" r="2.5" />
+        <circle className={classes.thinkingNode} cx="24" cy="7" r="2.5" />
+        <circle className={classes.thinkingNode} cx="38" cy="7" r="2.5" />
+      </svg>
+      <Text size="sm" c="dimmed">
+        {label}
+      </Text>
+    </div>
+  )
+}
 
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user'
@@ -23,13 +40,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   if (isUser) {
     return (
       <Group justify="flex-end" wrap="nowrap">
-        <Paper
-          px="md"
-          py="sm"
-          radius="md"
-          bg="blue.0"
-          maw="70%"
-        >
+        <Paper px="md" py="sm" radius="md" maw="70%" className={classes.userBubble}>
           <Text size="sm">{message.content}</Text>
         </Paper>
       </Group>
@@ -38,24 +49,12 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
   return (
     <Group align="flex-start" wrap="nowrap" gap="sm">
-      <ThemeIcon size={32} radius="xl" variant="light" color="blue">
+      <ThemeIcon size={32} radius="xl" variant="light" color="indigo">
         <IconBrain size={18} />
       </ThemeIcon>
-      <Paper
-        px="md"
-        py="sm"
-        radius="md"
-        withBorder
-        bg="white"
-        maw="75%"
-      >
+      <Paper px="md" py="sm" radius="md" withBorder maw="75%" className={classes.assistantBubble}>
         {message.loading ? (
-          <Group gap="xs">
-            <Loader size="xs" color="blue" />
-            <Text size="sm" c="dimmed">
-              {message.content}
-            </Text>
-          </Group>
+          <NeuralThinking label={message.content} />
         ) : (
           <Text size="sm">{message.content}</Text>
         )}
@@ -90,7 +89,6 @@ export function ChatPage() {
     setInput('')
     setSending(true)
 
-    // 模拟 AI 回答，后续接入 POST /api/chat
     await new Promise((resolve) => setTimeout(resolve, 1200))
 
     setMessages((prev) =>
@@ -108,16 +106,18 @@ export function ChatPage() {
   }
 
   return (
-    <Stack gap="md" style={{ flex: 1, minHeight: 0 }}>
+    <Stack gap="md" className={theme.pageRoot}>
       <Box>
-        <Title order={2}>{intl.formatMessage({ id: 'chat.title' })}</Title>
-        <Text size="sm" c="dimmed" mt={4}>
+        <Title order={2} className={theme.pageTitle}>
+          {intl.formatMessage({ id: 'chat.title' })}
+        </Title>
+        <Text size="sm" c="dimmed" mt={4} className={theme.pageSubtitle}>
           {intl.formatMessage({ id: 'chat.subtitle' })}
         </Text>
       </Box>
 
-      <Box style={{ flex: 1, minHeight: 0 }}>
-        <ScrollArea h="100%" type="auto" offsetScrollbars>
+      <Box className={`${theme.surfacePanel} ${classes.messagePanel}`}>
+        <ScrollArea flex={1} type="auto" offsetScrollbars p="md">
           <Stack gap="lg" pr="sm" pb="md">
             {messages.map((message) => (
               <MessageBubble key={message.id} message={message} />
@@ -126,7 +126,8 @@ export function ChatPage() {
         </ScrollArea>
       </Box>
 
-      <Paper withBorder p="md" radius="md" bg="white">
+      <Paper withBorder p="md" radius="md" bg="white" className={classes.composePanel}>
+        <div className={theme.accentTopLine} aria-hidden />
         <Group align="flex-end" gap="sm" wrap="nowrap">
           <Textarea
             flex={1}
@@ -144,7 +145,7 @@ export function ChatPage() {
             }}
           />
           <Button
-            color="blue"
+            className={theme.primaryBtn}
             leftSection={<IconSend size={16} />}
             onClick={handleSend}
             loading={sending}

@@ -8,14 +8,17 @@ import {
 import { IconChevronRight, IconClock } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
 import { historyItems } from '@/data/mock'
+import theme from '@/styles/appTheme.module.css'
 
 export function HistoryPage() {
   const intl = useIntl()
 
   return (
-    <Stack gap="lg">
+    <Stack gap="lg" className={theme.pageRoot}>
       <div>
-        <Title order={2}>{intl.formatMessage({ id: 'history.title' })}</Title>
+        <Title order={2} className={theme.pageTitle}>
+          {intl.formatMessage({ id: 'history.title' })}
+        </Title>
         <Text size="sm" c="dimmed" mt={4}>
           {intl.formatMessage({ id: 'history.subtitle' })}
         </Text>
@@ -28,6 +31,7 @@ export function HistoryPage() {
             withBorder
             padding="lg"
             radius="md"
+            className={theme.surfaceCard}
             style={{ cursor: 'pointer' }}
           >
             <Group justify="space-between" align="flex-start" wrap="nowrap">

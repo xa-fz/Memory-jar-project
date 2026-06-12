@@ -14,7 +14,7 @@ export function AppHeaderAuth() {
       <Menu.Target>
         <UnstyledButton style={{ flex: 1, minWidth: 0 }}>
           <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-            <ThemeIcon size={28} radius="xl" variant="light" color="blue">
+            <ThemeIcon size={28} radius="xl" variant="light" color="indigo">
               <IconUser size={16} stroke={1.5} />
             </ThemeIcon>
             <Text size="sm" fw={500} lineClamp={1}>

@@ -1,0 +1,78 @@
+.messagePanel {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.userBubble {
+  background: var(--mantine-color-indigo-0) !important;
+  border: 1px solid var(--mantine-color-indigo-1);
+}
+
+.assistantBubble {
+  position: relative;
+  background: var(--mantine-color-white) !important;
+  border: 1px solid var(--mantine-color-gray-3) !important;
+  overflow: hidden;
+}
+
+.assistantBubble::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #0891b2 0%, #8b5cf6 100%);
+}
+
+.thinking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.thinkingSvg {
+  width: 48px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.thinkingLine {
+  stroke: rgba(99, 102, 241, 0.35);
+  stroke-width: 1.5;
+}
+
+.thinkingNode {
+  fill: #6366f1;
+  animation: thinkingPulse 1.2s ease-in-out infinite;
+}
+
+.thinkingNode:nth-child(3) {
+  animation-delay: 0s;
+}
+
+.thinkingNode:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.thinkingNode:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+@keyframes thinkingPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.composePanel {
+  position: relative;
+}
