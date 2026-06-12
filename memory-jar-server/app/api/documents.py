@@ -1,4 +1,5 @@
 import mimetypes
+from datetime import timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
@@ -37,7 +38,13 @@ ALLOWED_EXTENSIONS = {
 
 def _format_date(doc: Document) -> str:
     created = doc.created_at
-    return created.date().isoformat() if created else ""
+    if not created:
+        return ""
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=timezone.utc)
+    else:
+        created = created.astimezone(timezone.utc)
+    return created.replace(microsecond=0).strftime("%Y-%m-%d %H:%M:%S") + "Z"
 
 
 def _to_list_item(doc: Document) -> dict:

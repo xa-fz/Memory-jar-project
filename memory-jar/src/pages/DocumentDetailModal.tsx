@@ -4,6 +4,7 @@ import { IconDownload } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
 import { FilePreview, httpDownload, httpGet, Modal, useMessageTip } from '@/components'
 import type { DocumentDetail } from '@/types'
+import { formatUtcToLocal } from '@/utils/formatDateTime'
 import classes from './DocumentDetailModal.module.css'
 
 export interface DocumentDetailModalProps {
@@ -118,7 +119,7 @@ export function DocumentDetailModal({
                 </Badge>
               ) : null}
               <Badge variant="light" color="gray">
-                {detail.date}
+                {formatUtcToLocal(detail.date)}
               </Badge>
               <Text size="xs" c="dimmed">
                 {intl.formatMessage(

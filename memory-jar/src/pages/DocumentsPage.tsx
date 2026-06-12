@@ -18,6 +18,7 @@ import { useDisclosure } from '@mantine/hooks'
 import { IconDownload, IconEye, IconFileText, IconRefresh, IconTrash, IconUpload } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
 import type { DocumentItem } from '@/types'
+import { formatUtcToLocal } from '@/utils/formatDateTime'
 import {
   httpDelete,
   httpDownload,
@@ -290,7 +291,7 @@ export function DocumentsPage() {
                       </Badge>
                     ) : null}
                     <Badge variant="light" color="gray">
-                      {doc.date}
+                      {formatUtcToLocal(doc.date)}
                     </Badge>
                     <ActionIcon
                       variant="subtle"
