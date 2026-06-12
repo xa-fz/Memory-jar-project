@@ -15,6 +15,7 @@ export interface ChatMessage {
 export interface DocumentItem {
   id: number
   title: string
+  file_type: string
   preview: string
   date: string
 }

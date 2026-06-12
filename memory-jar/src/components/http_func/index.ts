@@ -1,1 +1,1 @@
-export { httpGet, httpPost, httpRequest } from './http'
+export { httpDelete, httpGet, httpPost, httpRequest, httpUpload } from './http'

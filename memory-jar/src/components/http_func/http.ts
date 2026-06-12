@@ -20,16 +20,23 @@ export async function httpRequest<T = unknown>(
     credentials = 'include',
   } = options
 
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+
   let response: Response
   try {
     response = await fetch(buildUrl(path), {
       method,
       credentials,
       headers: {
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(body !== undefined && !isFormData ? { 'Content-Type': 'application/json' } : {}),
         ...headers,
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body:
+        body === undefined
+          ? undefined
+          : isFormData
+            ? body
+            : JSON.stringify(body),
     })
   } catch {
     throw new HttpError('network')
@@ -52,4 +59,19 @@ export function httpPost<T = unknown>(
   options?: Omit<HttpOptions, 'method' | 'body'>,
 ) {
   return httpRequest<T>(path, { ...options, method: 'POST', body })
+}
+
+export function httpDelete<T = unknown>(
+  path: string,
+  options?: Omit<HttpOptions, 'method' | 'body'>,
+) {
+  return httpRequest<T>(path, { ...options, method: 'DELETE' })
+}
+
+export function httpUpload<T = unknown>(
+  path: string,
+  formData: FormData,
+  options?: Omit<HttpOptions, 'method' | 'body'>,
+) {
+  return httpRequest<T>(path, { ...options, method: 'POST', body: formData })
 }

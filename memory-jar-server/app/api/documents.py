@@ -1,98 +1,156 @@
-# app/api/documents.py
-from fastapi import APIRouter, HTTPException, UploadFile, File, status
-from app.core.response import success_response, error_response
+from fastapi import APIRouter, Depends, File, UploadFile
+from sqlalchemy.orm import Session
+
+from app.core.deps import get_current_user
+from app.core.response import error_response, success_response
+from app.db.database import get_db
+from app.db.models import Document, User
+from app.schemas.documents import DocumentDetail, DocumentListItem, DocumentUploadData
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
-
-# 为 upload 路由单独注册
 upload_router = APIRouter(prefix="/api/documents/upload", tags=["documents"])
 
-# 临时存储（后面会改数据库）
-documents_store = []
-current_id = 1
+ALLOWED_EXTENSIONS = {
+    ".txt",
+    ".md",
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".json",
+    ".xml",
+    ".csv",
+    ".xlsx",
+}
 
-# 支持的文件类型
-ALLOWED_EXTENSIONS = {'.txt', '.md', '.pdf', '.doc', '.docx', '.json', '.xml', '.csv', '.xlsx'}
+PREVIEW_MAX_LEN = 120
 
-@upload_router.post("/", responses={
-    200: {
-        "description": "成功",
-        "content": {
-            "application/json": {
-                "example": {
-                    "code": 200,
-                    "message": "success",
-                    "data": {
-                        "id": 1,
-                        "title": "我的笔记.md"
-                    }
-                }
-            }
-        }
-    },
-    400: {
-        "description": "请求错误",
-        "content": {
-            "application/json": {
-                "example": {
-                    "code": 400,
-                    "message": "Unsupported file type. Allowed types: .txt, .md, .pdf, etc.",
-                    "data": None
-                }
-            }
-        }
-    }
-})
-async def upload_document(
-    file: UploadFile = File(..., description="Upload file (txt, md, pdf, doc, json, etc.)")
+
+def _preview(text: str) -> str:
+    normalized = " ".join(text.split())
+    if len(normalized) <= PREVIEW_MAX_LEN:
+        return normalized
+    return f"{normalized[:PREVIEW_MAX_LEN]}..."
+
+
+def _format_date(doc: Document) -> str:
+    created = doc.created_at
+    return created.date().isoformat() if created else ""
+
+
+def _to_list_item(doc: Document) -> dict:
+    return DocumentListItem(
+        id=doc.id,
+        title=doc.title,
+        file_type=doc.file_type,
+        preview=_preview(doc.content),
+        date=_format_date(doc),
+    ).model_dump()
+
+
+def _to_detail(doc: Document) -> dict:
+    return DocumentDetail(
+        id=doc.id,
+        title=doc.title,
+        file_type=doc.file_type,
+        content=doc.content,
+        file_size=doc.file_size,
+        date=_format_date(doc),
+    ).model_dump()
+
+
+def _decode_text(content: bytes) -> str:
+    try:
+        return content.decode("utf-8")
+    except UnicodeDecodeError:
+        try:
+            return content.decode("gbk")
+        except UnicodeDecodeError:
+            return content.decode("utf-8", errors="ignore")
+
+
+@router.get("/")
+def list_documents(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    """
-    Upload document to knowledge base
-    
-    - Auto extract filename as title
-    - Auto read file content
-    - Support multiple text formats
-    """
-    
-    # 1. 检查文件扩展名
+    docs = (
+        db.query(Document)
+        .filter(Document.user_id == current_user.id)
+        .order_by(Document.created_at.desc())
+        .all()
+    )
+    return success_response(data=[_to_list_item(doc) for doc in docs])
+
+
+@router.get("/{document_id}")
+def get_document(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    doc = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.user_id == current_user.id)
+        .first()
+    )
+    if not doc:
+        return error_response(message="Document not found", code=404)
+
+    return success_response(data=_to_detail(doc))
+
+
+@router.delete("/{document_id}")
+def delete_document(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    doc = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.user_id == current_user.id)
+        .first()
+    )
+    if not doc:
+        return error_response(message="Document not found", code=404)
+
+    db.delete(doc)
+    db.commit()
+    return success_response(message="success")
+
+
+@upload_router.post("/")
+async def upload_document(
+    file: UploadFile = File(..., description="Upload file (txt, md, pdf, doc, json, etc.)"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     filename = file.filename or "Untitled"
-    ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
-    
+    ext = f".{filename.rsplit('.', 1)[-1].lower()}" if "." in filename else ""
+
     if ext and ext not in ALLOWED_EXTENSIONS:
         return error_response(
-            message=f"Unsupported file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}",
-            code=400
+            message=f"Unsupported file type. Allowed types: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+            code=400,
         )
-    
-    # 2. 读取文件内容
+
     try:
-        content = await file.read()
-        # 尝试解码为文本
-        try:
-            text_content = content.decode('utf-8')
-        except UnicodeDecodeError:
-            # 如果 UTF-8 失败，尝试其他编码
-            try:
-                text_content = content.decode('gbk')
-            except UnicodeDecodeError:
-                text_content = content.decode('utf-8', errors='ignore')
-        
-        # If content is empty
+        raw = await file.read()
+        text_content = _decode_text(raw)
         if not text_content.strip():
             return error_response(message="File content is empty", code=400)
-            
-    except Exception as e:
-        return error_response(message=f"Failed to read file: {str(e)}", code=500)
-    
-    # 3. 保存文档
-    global current_id
-    new_doc = {
-        "id": current_id,
-        "title": filename,
-        "content": text_content
-    }
-    documents_store.append(new_doc)
-    current_id += 1
-    
-    # 4. 返回结果（不返回 content，只返回基本信息）
-    return success_response(data={"id": current_id - 1, "title": filename}, message="success")
+    except Exception as exc:
+        return error_response(message=f"Failed to read file: {exc}", code=500)
+
+    doc = Document(
+        user_id=current_user.id,
+        title=filename,
+        file_type=ext,
+        content=text_content,
+        file_size=len(raw),
+    )
+    db.add(doc)
+    db.commit()
+    db.refresh(doc)
+
+    data = DocumentUploadData(id=doc.id, title=doc.title, file_type=doc.file_type).model_dump()
+    return success_response(data=data, message="success")

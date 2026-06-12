@@ -9,7 +9,7 @@
 | 数据 | 存储位置 | 持久化 | 说明 |
 |------|----------|--------|------|
 | 用户（登录） | SQLite `data/memory_jar.db` | ✅ | 表 `users` |
-| 上传文档 | 内存 `documents_store` | ❌ | 待迁移到数据库 |
+| 上传文档 | SQLite `documents` 表 | ✅ | 文本内容 + 元数据，按用户隔离 |
 | 对话历史 | 未实现 | — | 规划表 `conversations` |
 | 向量索引 | 规划 `data/chroma/` | — | RAG 用，代码待接 |
 | 登出 token 黑名单 | 进程内存 | ❌ | 重启后失效 |
@@ -229,9 +229,6 @@ DATABASE_URL=sqlite:///./data/memory_jar.db
 
 **Q：连接测试失败？**  
 确认路径指向的是 `memory_jar.db` 而不是空目录；路径中尽量不含中文（若有问题可改用绝对路径）。
-
-**Q：表里只有 users？**  
-是的，文档与对话尚未写入 SQLite，见本文第 1 节。
 
 **Q：和 MySQL 比呢？**  
 MySQL 与 PostgreSQL 类似，都是独立服务；本项目文档以 SQLite / PostgreSQL 为主，若用 MySQL 需改 `DATABASE_URL` 为 `mysql+pymysql://...` 并安装 `pymysql`。

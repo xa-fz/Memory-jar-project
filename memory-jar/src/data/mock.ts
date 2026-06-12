@@ -33,18 +33,21 @@ export const initialDocuments: DocumentItem[] = [
   {
     id: 1,
     title: '物业缴费记录.md',
+    file_type: '.md',
     preview: '车位管理费已缴纳至 2026 年 3 月，物业费缴至 2026 年 6 月，水电费已设置自动扣款。',
     date: '2026-03-01',
   },
   {
     id: 2,
     title: '本月待办.txt',
+    file_type: '.txt',
     preview: '1. 预约体检 2. 联系装修公司 3. 缴纳车位管理费',
     date: '2026-02-28',
   },
   {
     id: 3,
     title: '体检报告摘要.pdf',
+    file_type: '.pdf',
     preview: '血糖 5.2 mmol/L，血压 120/80 mmHg，总胆固醇 4.8 mmol/L，均在正常范围内。',
     date: '2025-12-10',
   },

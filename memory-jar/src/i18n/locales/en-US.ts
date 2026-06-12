@@ -36,8 +36,11 @@ const messages = {
   'documents.upload': 'Upload document',
   'documents.deleteAria': 'Delete document',
   'documents.empty': 'No documents yet. Click "Upload document" to add your first memory',
-  'documents.uploadPreview':
-    'Uploaded file ({size} KB). Content will be indexed automatically after the backend is connected.',
+  'documents.loadError': 'Failed to load documents',
+  'documents.uploadSuccess': 'Document uploaded',
+  'documents.uploadError': 'Failed to upload document',
+  'documents.deleteSuccess': 'Document deleted',
+  'documents.deleteError': 'Failed to delete document',
   'documents.acceptHint': '.txt, .md, .pdf, .doc, .docx, .json, .xml, .csv, .xlsx',
 
   'history.title': 'History',

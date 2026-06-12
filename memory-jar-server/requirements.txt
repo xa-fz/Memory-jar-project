@@ -8,3 +8,4 @@ sentence-transformers==3.2.0
 sqlalchemy==2.0.36
 aiosqlite==0.20.0
 pydantic-settings==2.6.0
+python-multipart==0.0.20

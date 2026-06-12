@@ -33,7 +33,11 @@ const messages = {
   'documents.upload': '上传文档',
   'documents.deleteAria': '删除文档',
   'documents.empty': '暂无文档，点击「上传文档」添加你的第一份记忆',
-  'documents.uploadPreview': '已上传文件（{size} KB），内容将在接入后端后自动索引。',
+  'documents.loadError': '加载文档失败',
+  'documents.uploadSuccess': '文档上传成功',
+  'documents.uploadError': '文档上传失败',
+  'documents.deleteSuccess': '文档已删除',
+  'documents.deleteError': '删除文档失败',
   'documents.acceptHint': '.txt、.md、.pdf、.doc、.docx、.json、.xml、.csv、.xlsx',
 
   'history.title': '历史记录',
