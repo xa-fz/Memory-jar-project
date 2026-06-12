@@ -2,6 +2,8 @@ export type FilePreviewKind =
   | 'markdown'
   | 'pdf'
   | 'json'
+  | 'csv'
+  | 'xlsx'
   | 'image'
   | 'docx'
   | 'text'
@@ -22,6 +24,10 @@ export function getFilePreviewKind(fileType: string): FilePreviewKind {
       return 'pdf'
     case '.json':
       return 'json'
+    case '.csv':
+      return 'csv'
+    case '.xlsx':
+      return 'xlsx'
     case '.png':
     case '.jpg':
     case '.jpeg':
@@ -32,11 +38,8 @@ export function getFilePreviewKind(fileType: string): FilePreviewKind {
     case '.docx':
       return 'docx'
     case '.txt':
-    case '.csv':
     case '.xml':
     case '.log':
-    case '.xlsx':
-      return 'text'
     case '.doc':
       return 'unsupported'
     default:

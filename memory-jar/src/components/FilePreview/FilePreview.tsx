@@ -8,6 +8,8 @@ import {
   getFilePreviewKind,
   needsBinarySource,
 } from './filePreviewUtils'
+import { XlsxPreview } from './viewers/XlsxPreview'
+import { CsvPreview } from './viewers/CsvPreview'
 import { DocxPreview } from './viewers/DocxPreview'
 import { ImagePreview } from './viewers/ImagePreview'
 import { JsonPreview } from './viewers/JsonPreview'
@@ -113,6 +115,10 @@ export function FilePreview({
         return <MarkdownPreview content={content} />
       case 'json':
         return <JsonPreview content={content} />
+      case 'csv':
+        return <CsvPreview content={content} />
+      case 'xlsx':
+        return <XlsxPreview content={content} />
       case 'pdf':
         if (binaryBlob) return <PdfPreview file={binaryBlob} />
         return <TextPreview content={content} />

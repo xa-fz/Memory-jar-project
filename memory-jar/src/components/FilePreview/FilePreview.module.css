@@ -96,3 +96,18 @@
 .unsupported {
   padding: var(--mantine-spacing-md);
 }
+
+.csvWrap {
+  padding: var(--mantine-spacing-md);
+  overflow-x: auto;
+  background: var(--mantine-color-white);
+}
+
+.csvTable {
+  min-width: 100%;
+}
+
+.csvCell {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
