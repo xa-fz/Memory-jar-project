@@ -49,6 +49,7 @@ export function LoginMascot({ mode }: LoginMascotProps) {
             fill="url(#brainGrad)"
           />
           <path
+            className={classes.mascotBrainEyes}
             d="M92 36 C90 34, 96 34, 94 38 M104 36 C106 34, 100 34, 102 38"
             stroke="rgba(255,255,255,0.5)"
             strokeWidth="1.5"

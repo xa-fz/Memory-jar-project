@@ -13,15 +13,8 @@ import { httpPost, useMessageTip } from '@/components'
 import { useAuth } from '@/context'
 import { LanguageSwitcher } from '@/i18n/LanguageSwitcher'
 import { LoginMascot, type MascotMode } from './LoginMascot'
+import { LoginNeuralBg } from './LoginNeuralBg'
 import classes from './LoginPage.module.css'
-
-const PARTICLE_SEEDS = Array.from({ length: 24 }, (_, i) => ({
-  id: i,
-  left: `${(i * 17 + 7) % 100}%`,
-  top: `${(i * 23 + 11) % 100}%`,
-  duration: `${3 + (i % 5)}s`,
-  delay: `${(i * 0.37) % 4}s`,
-}))
 
 export function LoginPage() {
   const intl = useIntl()
@@ -84,26 +77,10 @@ export function LoginPage() {
   return (
     <div className={classes.root}>
       <div className={classes.bgLayer} aria-hidden>
-        <div className={classes.bgGradient} />
-        <div className={`${classes.orb} ${classes.orb1}`} />
-        <div className={`${classes.orb} ${classes.orb2}`} />
-        <div className={`${classes.orb} ${classes.orb3}`} />
-        <div className={`${classes.orb} ${classes.orb4}`} />
-        <div className={classes.gridOverlay} />
-        <div className={classes.particles}>
-          {PARTICLE_SEEDS.map((p) => (
-            <span
-              key={p.id}
-              className={classes.particle}
-              style={{
-                left: p.left,
-                top: p.top,
-                ['--duration' as string]: p.duration,
-                ['--delay' as string]: p.delay,
-              }}
-            />
-          ))}
-        </div>
+        <div className={classes.bgBase} />
+        <LoginNeuralBg />
+        <div className={classes.bgNoise} />
+        <div className={classes.bgVignette} />
       </div>
 
       <div className={classes.topBar}>
