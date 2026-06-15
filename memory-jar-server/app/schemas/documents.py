@@ -7,6 +7,13 @@ class DocumentListItem(BaseModel):
     file_type: str
     file_size: int
     date: str
+    vectorized: bool = False
+
+
+class DocumentVectorizeData(BaseModel):
+    id: int
+    vectorized: bool = True
+    chunks: int = 0
 
 
 class DocumentDetail(BaseModel):

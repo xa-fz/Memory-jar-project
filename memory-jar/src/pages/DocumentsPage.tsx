@@ -15,7 +15,7 @@ import {
 } from '@mantine/core'
 import { MIME_TYPES } from '@mantine/dropzone'
 import { useDisclosure } from '@mantine/hooks'
-import { IconDownload, IconEye, IconFileText, IconRefresh, IconTrash, IconUpload } from '@tabler/icons-react'
+import { IconDownload, IconEye, IconFileText, IconRefresh, IconSparkles, IconTrash, IconUpload } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
 import type { DocumentItem } from '@/types'
 import { formatUtcToLocal } from '@/utils/formatDateTime'
@@ -23,6 +23,7 @@ import {
   httpDelete,
   httpDownload,
   httpGet,
+  httpPost,
   httpPutUpload,
   httpUpload,
   Modal,
@@ -66,31 +67,29 @@ export function DocumentsPage() {
   const [pendingDelete, setPendingDelete] = useState<DocumentItem | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [updatingDoc, setUpdatingDoc] = useState<DocumentItem | null>(null)
+  const [vectorizingId, setVectorizingId] = useState<number | null>(null)
   const [detailRefreshKey, setDetailRefreshKey] = useState(0)
   const detailOpenedRef = useRef(detailOpened)
   detailOpenedRef.current = detailOpened
 
+  const loadErrorTip = intl.formatMessage({ id: 'documents.loadError' })
+
   const fetchDocuments = useCallback(async () => {
     setLoading(true)
     try {
-      const body = await httpGet<DocumentItem[]>('/documents/')
+      const body = await httpGet<DocumentItem[]>('/documents/', {
+        tip: { success: false, error: loadErrorTip },
+        dedupeKey: 'documents/list',
+      })
       if (body.code === 200 && body.data) {
         setDocuments(body.data)
-        return
       }
-      showTip({
-        message: body.message ?? intl.formatMessage({ id: 'documents.loadError' }),
-        type: 'error',
-      })
     } catch {
-      showTip({
-        message: intl.formatMessage({ id: 'documents.loadError' }),
-        type: 'error',
-      })
+      // 提示已由 http 层处理
     } finally {
       setLoading(false)
     }
-  }, [intl, showTip])
+  }, [loadErrorTip])
 
   useEffect(() => {
     void fetchDocuments()
@@ -125,26 +124,19 @@ export function DocumentsPage() {
   const handleDelete = async (id: number) => {
     setDeleting(true)
     try {
-      const body = await httpDelete(`/documents/${id}`)
+      const body = await httpDelete(`/documents/${id}`, {
+        tip: {
+          success: intl.formatMessage({ id: 'documents.deleteSuccess' }),
+          error: intl.formatMessage({ id: 'documents.deleteError' }),
+        },
+      })
       if (body.code === 200) {
         setDocuments((prev) => prev.filter((doc) => doc.id !== id))
         if (selectedDocId === id) handleCloseDetail()
         setPendingDelete(null)
-        showTip({
-          message: intl.formatMessage({ id: 'documents.deleteSuccess' }),
-          type: 'success',
-        })
-        return
       }
-      showTip({
-        message: body.message ?? intl.formatMessage({ id: 'documents.deleteError' }),
-        type: 'error',
-      })
     } catch {
-      showTip({
-        message: intl.formatMessage({ id: 'documents.deleteError' }),
-        type: 'error',
-      })
+      // 提示已由 http 层处理
     } finally {
       setDeleting(false)
     }
@@ -159,30 +151,49 @@ export function DocumentsPage() {
       const body = await httpUpload<{ id: number; title: string; file_type: string }>(
         '/documents/upload/',
         formData,
+        {
+          tip: {
+            success: intl.formatMessage({ id: 'documents.uploadSuccess' }),
+            error: intl.formatMessage({ id: 'documents.uploadError' }),
+          },
+        },
       )
 
       if (body.code !== 200) {
-        showTip({
-          message: body.message ?? intl.formatMessage({ id: 'documents.uploadError' }),
-          type: 'error',
-        })
         throw new Error('upload failed')
       }
 
-      showTip({
-        message: intl.formatMessage({ id: 'documents.uploadSuccess' }),
-        type: 'success',
-      })
       await fetchDocuments()
     } catch (err) {
       if (err instanceof Error && err.message === 'upload failed') {
         throw err
       }
-      showTip({
-        message: intl.formatMessage({ id: 'documents.uploadError' }),
-        type: 'error',
-      })
       throw err
+    }
+  }
+
+  const handleVectorize = async (doc: DocumentItem) => {
+    setVectorizingId(doc.id)
+    try {
+      const body = await httpPost<{ id: number; vectorized: boolean; chunks: number }>(
+        `/documents/${doc.id}/vectorize`,
+        undefined,
+        {
+          tip: {
+            success: intl.formatMessage({ id: 'documents.vectorizeSuccess' }),
+            error: intl.formatMessage({ id: 'documents.vectorizeFailed' }),
+          },
+        },
+      )
+      if (body.code === 200) {
+        setDocuments((prev) =>
+          prev.map((item) => (item.id === doc.id ? { ...item, vectorized: true } : item)),
+        )
+      }
+    } catch {
+      // 提示已由 http 层处理
+    } finally {
+      setVectorizingId(null)
     }
   }
 
@@ -198,20 +209,18 @@ export function DocumentsPage() {
       const body = await httpPutUpload<{ id: number; title: string; file_type: string }>(
         `/documents/${docId}`,
         formData,
+        {
+          tip: {
+            success: intl.formatMessage({ id: 'documents.updateSuccess' }),
+            error: intl.formatMessage({ id: 'documents.updateError' }),
+          },
+        },
       )
 
       if (body.code !== 200) {
-        showTip({
-          message: body.message ?? intl.formatMessage({ id: 'documents.updateError' }),
-          type: 'error',
-        })
         throw new Error('update failed')
       }
 
-      showTip({
-        message: intl.formatMessage({ id: 'documents.updateSuccess' }),
-        type: 'success',
-      })
       setUpdatingDoc(null)
       await fetchDocuments()
       if (selectedDocId === docId) {
@@ -221,10 +230,6 @@ export function DocumentsPage() {
       if (err instanceof Error && err.message === 'update failed') {
         throw err
       }
-      showTip({
-        message: intl.formatMessage({ id: 'documents.updateError' }),
-        type: 'error',
-      })
       throw err
     }
   }
@@ -290,22 +295,58 @@ export function DocumentsPage() {
                         {doc.file_type.replace(/^\./, '').toUpperCase()}
                       </Badge>
                     ) : null}
+                    <Badge variant="light" color={doc.vectorized ? 'teal' : 'gray'}>
+                      {intl.formatMessage({
+                        id: doc.vectorized ? 'documents.vectorized' : 'documents.notVectorized',
+                      })}
+                    </Badge>
                     <Badge variant="light" color="gray">
                       {formatUtcToLocal(doc.date)}
                     </Badge>
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      aria-label={intl.formatMessage({ id: 'documents.downloadAria' })}
-                      onClick={() => void handleDownload(doc)}
-                    >
-                      <IconDownload size={18} />
-                    </ActionIcon>
                     <Tooltip
-                      label={intl.formatMessage({ id: 'documents.updateTooltip' })}
+                      label={intl.formatMessage({
+                        id:
+                          vectorizingId === doc.id
+                            ? 'documents.vectorizing'
+                            : doc.vectorized
+                              ? 'documents.revectorize'
+                              : 'documents.vectorize',
+                      })}
                       withArrow
-                      multiline
-                      w={220}
+                    >
+                      <ActionIcon
+                        variant="subtle"
+                        color={doc.vectorized ? 'teal' : 'indigo'}
+                        aria-label={intl.formatMessage({
+                          id:
+                            vectorizingId === doc.id
+                              ? 'documents.vectorizing'
+                              : doc.vectorized
+                                ? 'documents.revectorize'
+                                : 'documents.vectorize',
+                        })}
+                        loading={vectorizingId === doc.id}
+                        onClick={() => void handleVectorize(doc)}
+                      >
+                        <IconSparkles size={18} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip
+                      label={intl.formatMessage({ id: 'documents.downloadAria' })}
+                      withArrow
+                    >
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        aria-label={intl.formatMessage({ id: 'documents.downloadAria' })}
+                        onClick={() => void handleDownload(doc)}
+                      >
+                        <IconDownload size={18} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip
+                      label={intl.formatMessage({ id: 'documents.updateAria' })}
+                      withArrow
                     >
                       <ActionIcon
                         variant="subtle"
@@ -316,22 +357,32 @@ export function DocumentsPage() {
                         <IconRefresh size={18} />
                       </ActionIcon>
                     </Tooltip>
-                    <ActionIcon
-                      variant="subtle"
-                      color="indigo"
-                      aria-label={intl.formatMessage({ id: 'documents.viewAria' })}
-                      onClick={() => handleView(doc.id)}
+                    <Tooltip
+                      label={intl.formatMessage({ id: 'documents.viewAria' })}
+                      withArrow
                     >
-                      <IconEye size={18} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      aria-label={intl.formatMessage({ id: 'documents.deleteAria' })}
-                      onClick={() => setPendingDelete(doc)}
+                      <ActionIcon
+                        variant="subtle"
+                        color="indigo"
+                        aria-label={intl.formatMessage({ id: 'documents.viewAria' })}
+                        onClick={() => handleView(doc.id)}
+                      >
+                        <IconEye size={18} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip
+                      label={intl.formatMessage({ id: 'documents.deleteAria' })}
+                      withArrow
                     >
-                      <IconTrash size={18} />
-                    </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        aria-label={intl.formatMessage({ id: 'documents.deleteAria' })}
+                        onClick={() => setPendingDelete(doc)}
+                      >
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Tooltip>
                   </Group>
                 </Group>
               </Card>

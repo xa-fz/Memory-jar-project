@@ -7,7 +7,6 @@ export type FilePreviewKind =
   | 'image'
   | 'docx'
   | 'text'
-  | 'unsupported'
 
 export function normalizeFileType(fileType: string): string {
   const trimmed = fileType.trim().toLowerCase()
@@ -41,7 +40,7 @@ export function getFilePreviewKind(fileType: string): FilePreviewKind {
     case '.xml':
     case '.log':
     case '.doc':
-      return 'unsupported'
+      return 'text'
     default:
       return 'text'
   }

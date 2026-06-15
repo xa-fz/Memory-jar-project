@@ -11,7 +11,7 @@
 | 用户（登录） | SQLite `data/memory_jar.db` | ✅ | 表 `users` |
 | 上传文档 | SQLite `documents` 表 | ✅ | 文本内容 + 元数据，按用户隔离 |
 | 对话历史 | 未实现 | — | 规划表 `conversations` |
-| 向量索引 | 规划 `data/chroma/` | — | RAG 用，代码待接 |
+| 向量索引 | SQLite 表 `document_chunks`（同 `memory_jar.db`） | ✅ | RAG 检索 |
 | 登出 token 黑名单 | 进程内存 | ❌ | 重启后失效 |
 
 **默认 SQLite 文件路径**（在 `memory-jar-server` 目录下启动服务时）：

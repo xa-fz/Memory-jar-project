@@ -60,10 +60,29 @@
   font-size: var(--mantine-font-size-sm);
   line-height: 1.7;
   color: var(--mantine-color-dark-7);
+  max-width: 100%;
+  overflow-x: hidden;
+  word-break: break-word;
+  box-sizing: border-box;
 }
 
 .docxHtml p {
   margin: 0.5em 0;
+}
+
+.docxHtml img {
+  display: block;
+  max-width: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain;
+  margin: 0.5em 0;
+}
+
+.docxHtml table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .imageWrap {

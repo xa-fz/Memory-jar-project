@@ -1,0 +1,52 @@
+.conversationRow,
+.conversationRowActive {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.conversationRow:hover,
+.conversationRow[data-menu-open] {
+  background: var(--mantine-color-gray-0);
+}
+
+.conversationRowActive {
+  background: var(--mantine-color-indigo-0);
+  border-color: var(--mantine-color-indigo-2);
+}
+
+.conversationRowActive:hover,
+.conversationRowActive[data-menu-open] {
+  background: var(--mantine-color-indigo-0);
+}
+
+.conversationMain {
+  flex: 1;
+  min-width: 0;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-xs) var(--mantine-spacing-sm)
+    var(--mantine-spacing-md);
+  border-radius: var(--mantine-radius-md);
+  text-align: left;
+}
+
+.conversationMenuBtn {
+  flex-shrink: 0;
+  margin-right: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.conversationRow:hover .conversationMenuBtn,
+.conversationRow[data-menu-open] .conversationMenuBtn,
+.conversationRowActive:hover .conversationMenuBtn,
+.conversationRowActive[data-menu-open] .conversationMenuBtn {
+  opacity: 1;
+}
+
+.documentsLink {
+  margin-top: auto;
+}

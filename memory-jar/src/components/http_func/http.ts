@@ -1,5 +1,7 @@
 import type { ApiResponse, HttpOptions } from '@/types'
 import { HttpError } from '@/types'
+import { applyHttpResponseTip, handleHttpRequestError } from './httpTip'
+import { buildHttpDedupeKey, dedupeAsync } from './httpDedupe'
 
 const API_PREFIX = '/mj'
 
@@ -8,8 +10,7 @@ function buildUrl(path: string) {
   return `${API_PREFIX}${normalized}`
 }
 
-/** 统一请求：默认带 Cookie，JSON body 自动序列化 */
-export async function httpRequest<T = unknown>(
+async function executeHttpRequest<T = unknown>(
   path: string,
   options: HttpOptions = {},
 ): Promise<ApiResponse<T>> {
@@ -18,6 +19,7 @@ export async function httpRequest<T = unknown>(
     body,
     headers = {},
     credentials = 'include',
+    tip,
   } = options
 
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
@@ -39,14 +41,35 @@ export async function httpRequest<T = unknown>(
             : JSON.stringify(body),
     })
   } catch {
-    throw new HttpError('network')
+    const error = new HttpError('network')
+    handleHttpRequestError(error, tip)
+    throw error
   }
 
   try {
-    return (await response.json()) as ApiResponse<T>
+    const result = (await response.json()) as ApiResponse<T>
+    applyHttpResponseTip(result, tip)
+    return result
   } catch {
-    throw new HttpError('parse')
+    const error = new HttpError('parse')
+    handleHttpRequestError(error, tip)
+    throw error
   }
+}
+
+/** 统一请求：默认带 Cookie，JSON body 自动序列化 */
+export async function httpRequest<T = unknown>(
+  path: string,
+  options: HttpOptions = {},
+): Promise<ApiResponse<T>> {
+  const { dedupeKey, method = 'GET' } = options
+
+  if (dedupeKey) {
+    const key = buildHttpDedupeKey(method, path, dedupeKey)
+    return dedupeAsync(key, () => executeHttpRequest<T>(path, options))
+  }
+
+  return executeHttpRequest<T>(path, options)
 }
 
 export function httpGet<T = unknown>(path: string, options?: Omit<HttpOptions, 'method' | 'body'>) {
@@ -59,6 +82,14 @@ export function httpPost<T = unknown>(
   options?: Omit<HttpOptions, 'method' | 'body'>,
 ) {
   return httpRequest<T>(path, { ...options, method: 'POST', body })
+}
+
+export function httpPatch<T = unknown>(
+  path: string,
+  body?: unknown,
+  options?: Omit<HttpOptions, 'method' | 'body'>,
+) {
+  return httpRequest<T>(path, { ...options, method: 'PATCH', body })
 }
 
 export function httpDelete<T = unknown>(
@@ -121,3 +152,5 @@ export async function httpDownload(
   link.click()
   URL.revokeObjectURL(url)
 }
+
+export { clearHttpDedupe } from './httpDedupe'

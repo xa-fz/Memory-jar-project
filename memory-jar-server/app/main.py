@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, documents
+from app.api import auth, chat, documents
 from app.core.config import settings
 from app.core.response import register_exception_handlers
 from app.db.init_db import init_db
@@ -20,6 +20,7 @@ app = FastAPI(title="Memory Jar API", version="1.0.0", lifespan=lifespan)
 register_exception_handlers(app)
 
 app.include_router(auth.router)
+app.include_router(chat.router)
 app.include_router(documents.router)
 app.include_router(documents.upload_router)
 

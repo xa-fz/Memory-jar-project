@@ -76,3 +76,43 @@
 .composePanel {
   position: relative;
 }
+
+.sourcesBlock {
+  padding-top: var(--mantine-spacing-xs);
+  border-top: 1px solid var(--mantine-color-gray-2);
+}
+
+.sourcesIcon {
+  color: var(--mantine-color-indigo-6);
+  flex-shrink: 0;
+}
+
+.sourceItem {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-gray-0);
+  border: 1px solid var(--mantine-color-gray-2);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.sourceItem:hover {
+  background: var(--mantine-color-indigo-0);
+  border-color: var(--mantine-color-indigo-2);
+}
+
+.sourceTitle {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  color: var(--mantine-color-indigo-7);
+}
+
+.sourceChevron {
+  flex-shrink: 0;
+  color: var(--mantine-color-gray-5);
+}
+
+.sourceItem:hover .sourceChevron {
+  color: var(--mantine-color-indigo-5);
+}

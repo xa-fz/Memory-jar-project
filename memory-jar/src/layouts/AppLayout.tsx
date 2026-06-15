@@ -1,40 +1,65 @@
 import {
   AppShell,
+  Button,
   Divider,
   Group,
   NavLink,
+  ScrollArea,
   Stack,
   Text,
   Title,
 } from '@mantine/core'
-import {
-  IconClock,
-  IconFileText,
-  IconMessageCircle,
-} from '@tabler/icons-react'
+import { IconFileText, IconPlus } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { ChatProvider, useChat } from '@/context'
 import { LanguageSwitcher } from '@/i18n/LanguageSwitcher'
-import type { PageId } from '@/types'
-import { recentChats } from '@/data/mock'
 import theme from '@/styles/appTheme.module.css'
 import { AppHeaderAuth } from './AppHeaderAuth'
+import { ConversationSidebarItem } from './ConversationSidebarItem'
+import classes from './AppLayout.module.css'
 
-const navItems: {
-  id: PageId
-  path: string
-  labelId: 'nav.chat' | 'nav.documents' | 'nav.history'
-  icon: typeof IconMessageCircle
-}[] = [
-  { id: 'chat', path: '/chat', labelId: 'nav.chat', icon: IconMessageCircle },
-  { id: 'documents', path: '/documents', labelId: 'nav.documents', icon: IconFileText },
-  { id: 'history', path: '/history', labelId: 'nav.history', icon: IconClock },
-]
+function formatConversationTime(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleString(undefined, {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}
 
-export function AppLayout() {
+function AppShellContent() {
   const intl = useIntl()
   const location = useLocation()
   const navigate = useNavigate()
+  const {
+    sortedConversations,
+    activeId,
+    selectConversation,
+    createNewConversation,
+    deleteConversation,
+    renameConversation,
+  } = useChat()
+
+  const isChatRoute = location.pathname === '/chat' || location.pathname === '/'
+  const isDocumentsRoute = location.pathname === '/documents'
+
+  const goToChat = () => {
+    if (!isChatRoute) {
+      navigate('/chat')
+    }
+  }
+
+  const handleNewConversation = () => {
+    void createNewConversation().then(() => goToChat())
+  }
+
+  const handleSelectConversation = (id: number) => {
+    void selectConversation(id).then(() => goToChat())
+  }
 
   return (
     <AppShell
@@ -42,7 +67,7 @@ export function AppLayout() {
       padding="md"
     >
       <AppShell.Navbar p="md" withBorder>
-        <Stack gap="lg" h="100%">
+        <Stack gap="md" h="100%">
           <Stack gap="md">
             <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
               <AppHeaderAuth />
@@ -70,30 +95,54 @@ export function AppLayout() {
 
           <Divider />
 
-          <Stack gap={4}>
-            {navItems.map(({ path, labelId, icon: Icon }) => (
-              <NavLink
-                key={path}
-                label={intl.formatMessage({ id: labelId })}
-                leftSection={<Icon size={18} stroke={1.5} />}
-                active={location.pathname === path}
-                onClick={() => navigate(path)}
-                variant="light"
-                color="indigo"
-              />
-            ))}
-          </Stack>
+          <Button
+            className={theme.primaryBtn}
+            leftSection={<IconPlus size={16} />}
+            onClick={handleNewConversation}
+            fullWidth
+          >
+            {intl.formatMessage({ id: 'chat.newConversation' })}
+          </Button>
 
-          <Stack gap="xs" mt="auto" pt="md">
-            <Text size="xs" c="dimmed" fw={600} tt="uppercase">
-              {intl.formatMessage({ id: 'nav.recentChats' })}
-            </Text>
-            {recentChats.map((title) => (
-              <Text key={title} size="sm" c="dimmed" lineClamp={1}>
-                {title}
-              </Text>
-            ))}
-          </Stack>
+          <Text size="xs" c="dimmed" fw={600} tt="uppercase">
+            {intl.formatMessage({ id: 'chat.conversationList' })}
+          </Text>
+
+          <ScrollArea flex={1} type="auto" offsetScrollbars>
+            <Stack gap={4} pr={4}>
+              {sortedConversations.length === 0 ? (
+                <Text size="sm" c="dimmed" py="sm">
+                  {intl.formatMessage({ id: 'chat.emptyConversations' })}
+                </Text>
+              ) : (
+                sortedConversations.map((conversation) => {
+                  const isActive = isChatRoute && conversation.id === activeId
+                  return (
+                    <ConversationSidebarItem
+                      key={conversation.id}
+                      conversation={conversation}
+                      isActive={isActive}
+                      formattedTime={formatConversationTime(conversation.updatedAt)}
+                      onSelect={() => handleSelectConversation(conversation.id)}
+                      onRename={(title) => renameConversation(conversation.id, title)}
+                      onDelete={() => deleteConversation(conversation.id)}
+                    />
+                  )
+                })
+              )}
+            </Stack>
+          </ScrollArea>
+
+          <NavLink
+            className={classes.documentsLink}
+            label={intl.formatMessage({ id: 'nav.myDocuments' })}
+            description={intl.formatMessage({ id: 'nav.myDocumentsHint' })}
+            leftSection={<IconFileText size={18} stroke={1.5} />}
+            active={isDocumentsRoute}
+            onClick={() => navigate('/documents')}
+            variant="light"
+            color="indigo"
+          />
         </Stack>
       </AppShell.Navbar>
 
@@ -101,5 +150,13 @@ export function AppLayout() {
         <Outlet />
       </AppShell.Main>
     </AppShell>
+  )
+}
+
+export function AppLayout() {
+  return (
+    <ChatProvider>
+      <AppShellContent />
+    </ChatProvider>
   )
 }

@@ -16,7 +16,7 @@ export interface DocumentDetailModalProps {
   onExited?: () => void
 }
 
-const MODAL_WIDTH = 960
+const MODAL_WIDTH = 'min(1280px, 94vw)'
 const PREVIEW_HEIGHT = 560
 const PREVIEW_HEIGHT_WITH_SUMMARY = 440
 
@@ -47,7 +47,10 @@ export function DocumentDetailModal({
 
     void (async () => {
       try {
-        const body = await httpGet<DocumentDetail>(`/documents/${documentId}`)
+        const body = await httpGet<DocumentDetail>(`/documents/${documentId}`, {
+          tip: { success: false, error: intl.formatMessage({ id: 'documents.detailError' }) },
+          dedupeKey: `documents/detail:${documentId}:${refreshKey}`,
+        })
         if (cancelled) return
 
         if (body.code === 200 && body.data) {
@@ -55,17 +58,9 @@ export function DocumentDetailModal({
           return
         }
 
-        showTip({
-          message: body.message ?? intl.formatMessage({ id: 'documents.detailError' }),
-          type: 'error',
-        })
         onClose()
       } catch {
         if (!cancelled) {
-          showTip({
-            message: intl.formatMessage({ id: 'documents.detailError' }),
-            type: 'error',
-          })
           onClose()
         }
       } finally {
@@ -76,7 +71,7 @@ export function DocumentDetailModal({
     return () => {
       cancelled = true
     }
-  }, [opened, documentId, refreshKey, intl, showTip, onClose])
+  }, [opened, documentId, refreshKey, intl, onClose])
 
   const handleDownload = async () => {
     if (!detail) return

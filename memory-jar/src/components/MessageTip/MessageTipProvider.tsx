@@ -2,10 +2,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
+import { useIntl } from 'react-intl'
+import { registerHttpTipHandler, setHttpTipDefaultMessages } from '@/components/http_func/httpTip'
 import { MessageTip, type MessageTipType } from './MessageTip'
 
 export interface ShowMessageTipOptions {
@@ -22,6 +25,7 @@ interface MessageTipContextValue {
 const MessageTipContext = createContext<MessageTipContextValue | null>(null)
 
 export function MessageTipProvider({ children }: { children: ReactNode }) {
+  const intl = useIntl()
   const [tip, setTip] = useState<ShowMessageTipOptions | null>(null)
 
   const showTip = useCallback((options: ShowMessageTipOptions) => {
@@ -34,6 +38,19 @@ export function MessageTipProvider({ children }: { children: ReactNode }) {
       return null
     })
   }, [])
+
+  useEffect(() => {
+    setHttpTipDefaultMessages({
+      success: intl.formatMessage({ id: 'http.success' }),
+      error: intl.formatMessage({ id: 'http.error' }),
+      network: intl.formatMessage({ id: 'http.network' }),
+    })
+  }, [intl])
+
+  useEffect(() => {
+    registerHttpTipHandler(showTip)
+    return () => registerHttpTipHandler(null)
+  }, [showTip])
 
   const value = useMemo(() => ({ showTip }), [showTip])
 

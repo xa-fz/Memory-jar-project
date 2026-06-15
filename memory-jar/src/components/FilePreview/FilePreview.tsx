@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Center, Loader, ScrollArea, Stack, Text } from '@mantine/core'
+import { Center, Loader, ScrollArea, Text } from '@mantine/core'
 import clsx from 'clsx'
 import { useIntl } from 'react-intl'
 import { httpBlob } from '@/components/http_func'
@@ -16,7 +16,6 @@ import { JsonPreview } from './viewers/JsonPreview'
 import { MarkdownPreview } from './viewers/MarkdownPreview'
 import { PdfPreview } from './viewers/PdfPreview'
 import { TextPreview } from './viewers/TextPreview'
-import { UnsupportedPreview } from './viewers/UnsupportedPreview'
 
 export interface FilePreviewProps {
   fileType: string
@@ -93,20 +92,15 @@ export function FilePreview({
     }
 
     if (binaryError && requiresBinary) {
+      if (content.trim()) {
+        return <TextPreview content={content} />
+      }
       return (
-        <Stack gap="sm" className={classes.unsupported}>
+        <Center py="xl">
           <Text size="sm" c="dimmed">
             {intl.formatMessage({ id: 'filePreview.loadError' })}
           </Text>
-          {content.trim() ? (
-            <>
-              <Text size="xs" c="dimmed">
-                {intl.formatMessage({ id: 'filePreview.fallbackText' })}
-              </Text>
-              <TextPreview content={content} />
-            </>
-          ) : null}
-        </Stack>
+        </Center>
       )
     }
 
@@ -124,12 +118,10 @@ export function FilePreview({
         return <TextPreview content={content} />
       case 'image':
         if (binaryUrl) return <ImagePreview src={binaryUrl} alt={fileName} />
-        return <UnsupportedPreview content={content} />
+        return <TextPreview content={content} />
       case 'docx':
         if (binaryBlob) return <DocxPreview file={binaryBlob} />
         return <TextPreview content={content} />
-      case 'unsupported':
-        return <UnsupportedPreview content={content} />
       case 'text':
       default:
         return <TextPreview content={content} />

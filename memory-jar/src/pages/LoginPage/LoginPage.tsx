@@ -53,7 +53,7 @@ export function LoginPage() {
       })
 
       if (body.code === 200) {
-        const meResult = await fetchMe()
+        const meResult = await fetchMe({ force: true })
         if (meResult === 'ok') {
           showTip({
             message: intl.formatMessage({ id: 'login.success' }),

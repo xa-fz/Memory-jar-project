@@ -2,37 +2,52 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
 import { useIntl } from 'react-intl'
 import { useNavigate } from 'react-router-dom'
-import { httpGet, httpPost, useMessageTip } from '@/components'
+import { clearHttpDedupe, httpGet, httpPost, useMessageTip } from '@/components'
 import type { AuthUser } from '@/types'
 
 type FetchMeResult = 'ok' | 'unauthorized' | 'error'
 
+interface FetchMeOptions {
+  force?: boolean
+}
+
 interface AuthContextValue {
   user: AuthUser | null
   checking: boolean
-  fetchMe: () => Promise<FetchMeResult>
+  fetchMe: (options?: FetchMeOptions) => Promise<FetchMeResult>
   logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
+
+const AUTH_ME_DEDUPE_KEY = 'auth/me'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const intl = useIntl()
   const navigate = useNavigate()
   const { showTip } = useMessageTip()
   const [user, setUser] = useState<AuthUser | null>(null)
-  const [checking, setChecking] = useState(false)
+  const [checking, setChecking] = useState(true)
 
-  const fetchMe = useCallback(async (): Promise<FetchMeResult> => {
+  const fetchMe = useCallback(async (options?: FetchMeOptions): Promise<FetchMeResult> => {
+    const force = options?.force ?? false
+
+    if (force) {
+      clearHttpDedupe(AUTH_ME_DEDUPE_KEY)
+    }
+
     setChecking(true)
     try {
-      const body = await httpGet<AuthUser>('/auth/me')
+      const body = await httpGet<AuthUser>('/auth/me', {
+        dedupeKey: AUTH_ME_DEDUPE_KEY,
+      })
       if (body.code === 200 && body.data) {
         setUser(body.data)
         return 'ok'
@@ -51,7 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  useEffect(() => {
+    void fetchMe()
+  }, [fetchMe])
+
   const logout = useCallback(async () => {
+    clearHttpDedupe(AUTH_ME_DEDUPE_KEY)
     try {
       await httpPost('/auth/logout')
     } catch {

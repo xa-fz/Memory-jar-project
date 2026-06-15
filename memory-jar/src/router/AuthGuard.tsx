@@ -1,5 +1,5 @@
 import { Center, Loader } from '@mantine/core'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useIntl } from 'react-intl'
 import { Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { useMessageTip } from '@/components'
@@ -8,34 +8,24 @@ import { useAuth } from '@/context'
 export function AuthGuard() {
   const intl = useIntl()
   const navigate = useNavigate()
-  const { user, fetchMe } = useAuth()
+  const { user, checking } = useAuth()
   const { showTip } = useMessageTip()
-  const [ready, setReady] = useState(false)
+  const hasHandledUnauthorized = useRef(false)
 
   useEffect(() => {
-    let cancelled = false
-
-    ;(async () => {
-      const result = await fetchMe()
-      if (cancelled) return
-
-      if (result === 'unauthorized') {
-        navigate('/login', { replace: true })
-        showTip({
-          message: intl.formatMessage({ id: 'auth.sessionExpired' }),
-          type: 'error',
-        })
-      }
-
-      setReady(true)
-    })()
-
-    return () => {
-      cancelled = true
+    if (checking || user || hasHandledUnauthorized.current) {
+      return
     }
-  }, [fetchMe, intl, navigate, showTip])
 
-  if (!ready) {
+    hasHandledUnauthorized.current = true
+    navigate('/login', { replace: true })
+    showTip({
+      message: intl.formatMessage({ id: 'auth.sessionExpired' }),
+      type: 'error',
+    })
+  }, [checking, user, intl, navigate, showTip])
+
+  if (checking) {
     return (
       <Center h="100vh">
         <Loader size="sm" />

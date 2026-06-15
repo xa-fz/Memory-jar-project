@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     default_username: str = "admin"
     default_password: str = "P@ssw0rd"
     upload_dir: str = "data/uploads"
+    embedding_model: str = "all-MiniLM-L6-v2"
+    rag_chunk_size: int = 600
+    rag_chunk_overlap: int = 80
+    rag_top_k: int = 4
     llm_api_key: str = Field(
         default="",
         validation_alias=AliasChoices("LLM_API_KEY", "DEEPSEEK_API_KEY", "OPENAI_API_KEY"),

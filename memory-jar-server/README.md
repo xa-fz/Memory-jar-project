@@ -23,6 +23,7 @@ Monorepo：[Memory-jar-project](https://github.com/xa-fz/Memory-jar-project)
 |------|------|
 | [jar-docs/README.md](../jar-docs/README.md) | 文档目录索引 |
 | [jar-docs/dev.md](../jar-docs/dev.md) | 产品概述、功能范围、版本计划、数据库设计 |
+| [docs/rag-vector-store.md](./docs/rag-vector-store.md) | RAG 向量存储（SQLite） |
 | [docs/database.md](./docs/database.md) | SQLite 连接说明、DBeaver 使用、SQLite vs PostgreSQL |
 
 ---
@@ -75,6 +76,34 @@ pip install -r requirements.txt
 ```bash
 .venv\Scripts\uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+#### Windows 与 PyTorch（sentence-transformers / RAG 向量化）
+
+本地向量化依赖 `sentence-transformers` → `torch`。在 Windows 上若直接 `pip install torch` 可能装到不兼容的 wheel，出现：
+
+```text
+OSError: [WinError 1114] ... Error loading ... torch\lib\c10.dll
+```
+
+**处理方式（已在 `requirements.txt` 固定版本）：**
+
+1. 使用 **PyTorch 官方 CPU 源** + **torch 2.5.1**（本项目验证可用）
+2. 正常 `pip install -r requirements.txt` 即可（文件内已含 `--extra-index-url`）
+
+若仍报错，可先单独重装 torch 再装其余依赖：
+
+```bash
+pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements.txt
+```
+
+验证：
+
+```bash
+python -c "import torch; import sentence_transformers; print('torch', torch.__version__, 'OK')"
+```
+
+仍失败时，请安装 [Microsoft Visual C++ Redistributable（最新版）](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)，然后重建虚拟环境再试。
 
 ### 2. 配置环境变量
 
@@ -156,7 +185,7 @@ curl -c cookies.txt -X POST "http://localhost:8000/api/auth/login" \
 | Web | FastAPI |
 | RAG | LangChain |
 | 数据库 | SQLite |
-| 向量库 | Chroma |
+| 向量库 | SQLite `document_chunks` 表 |
 | LLM | Deep Seek API |
 | ASGI | Uvicorn |
 
@@ -219,6 +248,7 @@ curl -b cookies.txt -X POST "http://localhost:8000/api/auth/logout"
 |------|------|------|
 | GET | `/api/documents` | 列表（待实现） |
 | POST | `/api/documents/upload/` | **上传文件**（`multipart/form-data`，字段 `file`） |
+| POST | `/api/documents/{id}/vectorize` | **向量化 / 重新向量化**指定文档（需登录） |
 | GET | `/api/documents/{id}` | 详情（待实现） |
 | DELETE | `/api/documents/{id}` | 删除（待实现） |
 
@@ -234,12 +264,27 @@ curl -X POST "http://localhost:8000/api/documents/upload/" \
 
 ### 问答
 
-```
-POST /api/chat
-Content-Type: application/json
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/chat/` | RAG 问答（需登录 Cookie） |
 
+```json
+POST /api/chat/
 { "question": "你的问题" }
 ```
+
+响应 `data`：
+
+```json
+{
+  "answer": "……",
+  "sources": [
+    { "document_id": 1, "title": "notes.md", "snippet": "……" }
+  ]
+}
+```
+
+向量索引在 SQLite 表 `document_chunks`（与 `memory_jar.db` 同库）。**上传不会自动向量化**；在文档列表对单个文件调用 `POST /api/documents/{id}/vectorize`，或在前端点击向量化图标。详见 [docs/rag-vector-store.md](./docs/rag-vector-store.md)。
 
 ### 对话历史
 

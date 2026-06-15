@@ -10,11 +10,14 @@ import {
   Textarea,
   ThemeIcon,
   Title,
+  UnstyledButton,
 } from '@mantine/core'
-import { IconBrain, IconSend } from '@tabler/icons-react'
+import { IconBrain, IconChevronRight, IconFileText, IconSend } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
-import type { ChatMessage } from '@/types'
-import { initialMessages } from '@/data/mock'
+import { httpPost } from '@/components'
+import { useChat } from '@/context/ChatContext'
+import type { ChatMessage, ChatResponseData, ChatSource } from '@/types'
+import { DocumentDetailModal } from './DocumentDetailModal'
 import theme from '@/styles/appTheme.module.css'
 import classes from './ChatPage.module.css'
 
@@ -34,7 +37,55 @@ function NeuralThinking({ label }: { label: string }) {
   )
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageSources({
+  sources,
+  onSelect,
+}: {
+  sources: ChatSource[]
+  onSelect: (documentId: number) => void
+}) {
+  const intl = useIntl()
+
+  if (sources.length === 0) {
+    return null
+  }
+
+  return (
+    <Stack gap={6} mt="sm" className={classes.sourcesBlock}>
+      <Group gap={6} wrap="nowrap">
+        <IconFileText size={14} className={classes.sourcesIcon} />
+        <Text size="xs" fw={600} c="dimmed">
+          {intl.formatMessage({ id: 'chat.sourcesTitle' })}
+        </Text>
+      </Group>
+      <Stack gap={4}>
+        {sources.map((source) => (
+          <UnstyledButton
+            key={source.document_id}
+            className={classes.sourceItem}
+            aria-label={intl.formatMessage({ id: 'documents.viewAria' })}
+            onClick={() => onSelect(source.document_id)}
+          >
+            <Group justify="space-between" wrap="nowrap" gap="xs">
+              <Text size="xs" fw={500} lineClamp={1} className={classes.sourceTitle}>
+                {source.title || `#${source.document_id}`}
+              </Text>
+              <IconChevronRight size={14} className={classes.sourceChevron} aria-hidden />
+            </Group>
+          </UnstyledButton>
+        ))}
+      </Stack>
+    </Stack>
+  )
+}
+
+function MessageBubble({
+  message,
+  onSourceSelect,
+}: {
+  message: ChatMessage
+  onSourceSelect: (documentId: number) => void
+}) {
   const isUser = message.role === 'user'
 
   if (isUser) {
@@ -56,7 +107,14 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         {message.loading ? (
           <NeuralThinking label={message.content} />
         ) : (
-          <Text size="sm">{message.content}</Text>
+          <>
+            <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+              {message.content}
+            </Text>
+            {message.sources?.length ? (
+              <MessageSources sources={message.sources} onSelect={onSourceSelect} />
+            ) : null}
+          </>
         )}
       </Paper>
     </Group>
@@ -65,51 +123,88 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
 export function ChatPage() {
   const intl = useIntl()
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
+  const {
+    activeConversation,
+    ensureActiveConversation,
+    appendOptimisticMessages,
+    removeLoadingMessages,
+    applyChatResponse,
+  } = useChat()
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [previewDocId, setPreviewDocId] = useState<number | null>(null)
+  const [previewOpened, setPreviewOpened] = useState(false)
+
+  const messages = activeConversation?.messages ?? []
+  const headerTitle = activeConversation?.title ?? intl.formatMessage({ id: 'chat.title' })
+
+  const openSourcePreview = (documentId: number) => {
+    setPreviewDocId(documentId)
+    setPreviewOpened(true)
+  }
+
+  const closeSourcePreview = () => {
+    setPreviewOpened(false)
+  }
 
   const handleSend = async () => {
     const question = input.trim()
     if (!question || sending) return
 
-    const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: question,
+    setInput('')
+    setSending(true)
+
+    let conversationId: number
+    try {
+      conversationId = await ensureActiveConversation()
+    } catch {
+      setSending(false)
+      return
     }
+
     const loadingMsg: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: `loading-${Date.now()}`,
       role: 'assistant',
       content: intl.formatMessage({ id: 'chat.loading' }),
       loading: true,
     }
 
-    setMessages((prev) => [...prev, userMsg, loadingMsg])
-    setInput('')
-    setSending(true)
+    appendOptimisticMessages(conversationId, [
+      {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: question,
+      },
+      loadingMsg,
+    ])
 
-    await new Promise((resolve) => setTimeout(resolve, 1200))
+    try {
+      const body = await httpPost<ChatResponseData>(
+        '/chat/',
+        {
+          question,
+          conversation_id: conversationId,
+        },
+        { tip: { success: false } },
+      )
+      if (body.code !== 200 || !body.data?.answer) {
+        removeLoadingMessages(conversationId)
+        return
+      }
 
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === loadingMsg.id
-          ? {
-              ...msg,
-              loading: false,
-              content: intl.formatMessage({ id: 'chat.mockReply' }),
-            }
-          : msg,
-      ),
-    )
-    setSending(false)
+      applyChatResponse(body.data)
+    } catch {
+      removeLoadingMessages(conversationId)
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
     <Stack gap="md" className={theme.pageRoot}>
       <Box>
-        <Title order={2} className={theme.pageTitle}>
-          {intl.formatMessage({ id: 'chat.title' })}
+        <Title order={2} className={theme.pageTitle} lineClamp={1}>
+          {headerTitle}
         </Title>
         <Text size="sm" c="dimmed" mt={4} className={theme.pageSubtitle}>
           {intl.formatMessage({ id: 'chat.subtitle' })}
@@ -119,9 +214,23 @@ export function ChatPage() {
       <Box className={`${theme.surfacePanel} ${classes.messagePanel}`}>
         <ScrollArea flex={1} type="auto" offsetScrollbars p="md">
           <Stack gap="lg" pr="sm" pb="md">
-            {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
-            ))}
+            {!activeConversation ? (
+              <Text size="sm" c="dimmed" ta="center" py="xl">
+                {intl.formatMessage({ id: 'chat.pickConversation' })}
+              </Text>
+            ) : messages.length === 0 ? (
+              <Text size="sm" c="dimmed" ta="center" py="xl">
+                {intl.formatMessage({ id: 'chat.placeholder' })}
+              </Text>
+            ) : (
+              messages.map((message) => (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  onSourceSelect={openSourcePreview}
+                />
+              ))
+            )}
           </Stack>
         </ScrollArea>
       </Box>
@@ -140,14 +249,14 @@ export function ChatPage() {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
-                handleSend()
+                void handleSend()
               }
             }}
           />
           <Button
             className={theme.primaryBtn}
             leftSection={<IconSend size={16} />}
-            onClick={handleSend}
+            onClick={() => void handleSend()}
             loading={sending}
             disabled={!input.trim()}
           >
@@ -155,6 +264,13 @@ export function ChatPage() {
           </Button>
         </Group>
       </Paper>
+
+      <DocumentDetailModal
+        opened={previewOpened}
+        documentId={previewDocId}
+        onClose={closeSourcePreview}
+        onExited={() => setPreviewDocId(null)}
+      />
     </Stack>
   )
 }
