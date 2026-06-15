@@ -30,58 +30,122 @@ Monorepo：[Memory-jar-project](https://github.com/xa-fz/Memory-jar-project)
 ## 环境要求
 
 - Python >= 3.10
-- [DeepSeek API Key](https://platform.deepseek.com/)
+- [Deep Seek API Key](https://platform.deepseek.com/)（智能摘要 / 后续 Chat 需要，可选）
 
 ---
 
 ## 快速开始
 
-### 1. 安装依赖
+完整步骤见 **[开发环境](#开发环境)**。已配置好环境时，每次开发只需：
 
 ```bash
 cd memory-jar-server
+.venv\Scripts\activate          # Windows；Linux/macOS: source .venv/bin/activate
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+---
+
+## 开发环境
+
+日常本地开发按以下步骤（支持热重载 `--reload`）。
+
+### 1. 创建虚拟环境并安装依赖
+
+**Windows（PowerShell / CMD）**
+
+```bash
+cd memory-jar-server
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
+```
+
+**Linux / macOS**
+
+```bash
+cd memory-jar-server
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+未激活虚拟环境时，也可直接启动（Windows 示例）：
+
+```bash
+.venv\Scripts\uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### 2. 配置环境变量
 
-创建 `.env`：
+在 `memory-jar-server` 目录创建 `.env`：
 
 ```env
 DEEPSEEK_API_KEY=your_api_key_here
 DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEKMODEL=deepseek-chat
 
 APP_HOST=0.0.0.0
 APP_PORT=8000
 DATABASE_URL=sqlite:///./data/memory_jar.db
-VECTOR_STORE_PATH=./data/chroma
 CORS_ORIGINS=http://localhost:5173
-JWT_SECRET=memory-jar-dev-secret-change-me
+JWT_SECRET=memory-jar-dev-change-me
 DEFAULT_USERNAME=admin
 DEFAULT_PASSWORD=P@ssw0rd
 ```
 
-首次启动会自动创建 SQLite 表，并在无用户时创建默认账号（用户名/密码见上，可通过环境变量修改）。
+说明：
 
-### 3. 初始化并启动
+- 首次启动会自动建 SQLite 表；库中无用户时创建默认账号 `admin` / `P@ssw0rd`（仅初始化一次）。
+- `data/uploads/`、`data/memory_jar.db` 会在运行时自动创建。
+- 未配置 `DEEPSEEK_API_KEY` 时，文档上传与预览仍可用，**智能摘要**会跳过。
+
+### 3. 启动开发服务器
+
+在 `memory-jar-server` 目录、且已激活虚拟环境：
 
 ```bash
 mkdir -p data
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+Windows 若无 `mkdir -p`，执行 `mkdir data` 即可。
+
 | 地址 | 说明 |
 |------|------|
-| http://localhost:8000 | API 服务 |
+| http://localhost:8000 | API 根路径 |
+| http://localhost:8000/health | 健康检查 |
 | http://localhost:8000/docs | Swagger UI |
 | http://localhost:8000/redoc | ReDoc |
 
+修改 `app/` 下代码后，Uvicorn 会在 `--reload` 下自动重启。
+
 ### 4. 与前端联调
 
-1. 后端运行在 `http://localhost:8000`
-2. 前端 `VITE_API_BASE_URL=http://localhost:8000`
-3. `CORS_ORIGINS` 包含前端地址（默认 `http://localhost:5173`）
+1. 保持后端运行在 `http://localhost:8000`
+2. 另开终端启动前端：
+
+   ```bash
+   cd memory-jar
+   npm install
+   npm run dev
+   ```
+
+3. 浏览器打开 http://localhost:5173
+4. 前端 Vite 已将 `/mj/*` 代理到 `http://localhost:8000/api/*`，开发时一般无需额外配置
+5. 确认 `.env` 中 `CORS_ORIGINS` 包含 `http://localhost:5173`
+
+### 5. 常用开发命令
+
+```bash
+# 健康检查
+curl http://localhost:8000/health
+
+# 登录（Cookie 写入 cookies.txt）
+curl -c cookies.txt -X POST "http://localhost:8000/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"admin\",\"password\":\"P@ssw0rd\"}"
+```
 
 ---
 
@@ -93,7 +157,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 | RAG | LangChain |
 | 数据库 | SQLite |
 | 向量库 | Chroma |
-| LLM | DeepSeek API |
+| LLM | Deep Seek API |
 | ASGI | Uvicorn |
 
 ---
