@@ -1,7 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '@/context'
 import { AppLayout } from '@/layouts/AppLayout'
-import { ChatPage } from '@/pages/ChatPage'
+import { ChatPage } from '@/pages/ChatPage/ChatPage'
 import { DocumentsPage } from '@/pages/DocumentsPage'
 import { AuthGuard } from '@/router/AuthGuard'
 import { LoginRoute } from '@/router/LoginRoute'

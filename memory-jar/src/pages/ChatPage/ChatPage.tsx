@@ -17,7 +17,7 @@ import { useIntl } from 'react-intl'
 import { httpPost } from '@/components'
 import { useChat } from '@/context/ChatContext'
 import type { ChatMessage, ChatResponseData, ChatSource } from '@/types'
-import { DocumentDetailModal } from './DocumentDetailModal'
+import { DocumentDetailModal } from '../DocumentDetailModal'
 import theme from '@/styles/appTheme.module.css'
 import classes from './ChatPage.module.css'
 
