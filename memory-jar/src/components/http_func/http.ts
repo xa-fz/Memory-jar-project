@@ -20,6 +20,7 @@ async function executeHttpRequest<T = unknown>(
     headers = {},
     credentials = 'include',
     tip,
+    signal,
   } = options
 
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
@@ -29,6 +30,7 @@ async function executeHttpRequest<T = unknown>(
     response = await fetch(buildUrl(path), {
       method,
       credentials,
+      signal,
       headers: {
         ...(body !== undefined && !isFormData ? { 'Content-Type': 'application/json' } : {}),
         ...headers,
@@ -40,7 +42,10 @@ async function executeHttpRequest<T = unknown>(
             ? body
             : JSON.stringify(body),
     })
-  } catch {
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new HttpError('abort')
+    }
     const error = new HttpError('network')
     handleHttpRequestError(error, tip)
     throw error

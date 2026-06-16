@@ -111,6 +111,9 @@ export function applyHttpResponseTip(body: ApiResponse<unknown>, tip?: HttpTipOp
 }
 
 export function handleHttpRequestError(error: unknown, tip?: HttpTipOption) {
+  if (error instanceof HttpError && error.message === 'abort') {
+    return
+  }
   const resolved = resolveHttpTip(tip)
   if (!resolved?.showError) {
     return

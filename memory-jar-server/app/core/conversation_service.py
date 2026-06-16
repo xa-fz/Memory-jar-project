@@ -111,6 +111,50 @@ def update_conversation_title(
     return conversation
 
 
+def truncate_messages_from(
+    db: Session,
+    *,
+    user_id: int,
+    conversation_id: int,
+    message_id: int,
+) -> tuple[Conversation | None, list[dict]]:
+    """Delete the target user message and all messages after it. Return prior history."""
+    conversation = get_conversation(db, user_id=user_id, conversation_id=conversation_id)
+    if not conversation:
+        return None, []
+
+    target = (
+        db.query(Message)
+        .filter(
+            Message.id == message_id,
+            Message.conversation_id == conversation_id,
+            Message.role == "user",
+        )
+        .first()
+    )
+    if not target:
+        return None, []
+
+    prior_messages = (
+        db.query(Message)
+        .filter(
+            Message.conversation_id == conversation_id,
+            Message.created_at < target.created_at,
+        )
+        .order_by(Message.created_at)
+        .all()
+    )
+    prior_history = [{"role": message.role, "content": message.content} for message in prior_messages]
+
+    db.query(Message).filter(
+        Message.conversation_id == conversation_id,
+        Message.created_at >= target.created_at,
+    ).delete(synchronize_session=False)
+    db.commit()
+    db.refresh(conversation)
+    return conversation, prior_history
+
+
 def add_message(
     db: Session,
     *,

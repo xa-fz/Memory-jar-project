@@ -98,6 +98,8 @@ export interface HttpOptions {
   tip?: HttpTipOption
   /** 合并并发相同请求；传 true 时用 method+path 作为 key，或传自定义 key */
   dedupeKey?: string | true
+  /** 用于取消进行中的请求（如停止生成） */
+  signal?: AbortSignal
 }
 
 export class HttpError extends Error {

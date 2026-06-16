@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
+  ActionIcon,
   Box,
   Button,
   Group,
@@ -10,11 +11,13 @@ import {
   Textarea,
   ThemeIcon,
   Title,
+  Tooltip,
   UnstyledButton,
 } from '@mantine/core'
-import { IconBrain, IconChevronRight, IconFileText, IconSend } from '@tabler/icons-react'
+import { IconBrain, IconChevronRight, IconEdit, IconFileText, IconSend, IconSquare } from '@tabler/icons-react'
 import { useIntl } from 'react-intl'
 import { httpPost } from '@/components'
+import { HttpError } from '@/types'
 import { useChat } from '@/context/ChatContext'
 import type { ChatMessage, ChatResponseData, ChatSource } from '@/types'
 import { DocumentDetailModal } from '../DocumentDetailModal'
@@ -82,15 +85,40 @@ function MessageSources({
 function MessageBubble({
   message,
   onSourceSelect,
+  onEdit,
+  canEdit,
 }: {
   message: ChatMessage
   onSourceSelect: (documentId: number) => void
+  onEdit?: (message: ChatMessage) => void
+  canEdit?: boolean
 }) {
+  const intl = useIntl()
   const isUser = message.role === 'user'
 
   if (isUser) {
     return (
-      <Group justify="flex-end" wrap="nowrap">
+      <Group
+        justify="flex-end"
+        wrap="nowrap"
+        align="flex-start"
+        gap="xs"
+        className={classes.userMessageRow}
+      >
+        {canEdit && typeof message.id === 'number' && onEdit ? (
+          <Tooltip label={intl.formatMessage({ id: 'chat.edit' })}>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="sm"
+              className={classes.editAction}
+              aria-label={intl.formatMessage({ id: 'chat.edit' })}
+              onClick={() => onEdit(message)}
+            >
+              <IconEdit size={14} />
+            </ActionIcon>
+          </Tooltip>
+        ) : null}
         <Paper px="md" py="sm" radius="md" maw="70%" className={classes.userBubble}>
           <Text size="sm">{message.content}</Text>
         </Paper>
@@ -126,14 +154,21 @@ export function ChatPage() {
   const {
     activeConversation,
     ensureActiveConversation,
+    selectConversation,
     appendOptimisticMessages,
-    removeLoadingMessages,
+    removePendingExchange,
+    truncateMessagesFrom,
     applyChatResponse,
   } = useChat()
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null)
   const [previewDocId, setPreviewDocId] = useState<number | null>(null)
   const [previewOpened, setPreviewOpened] = useState(false)
+
+  const requestGenRef = useRef(0)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const activeConversationIdRef = useRef<number | null>(null)
 
   const messages = activeConversation?.messages ?? []
   const headerTitle = activeConversation?.title ?? intl.formatMessage({ id: 'chat.title' })
@@ -147,20 +182,58 @@ export function ChatPage() {
     setPreviewOpened(false)
   }
 
+  const cancelEdit = async () => {
+    setEditingMessageId(null)
+    setInput('')
+    if (activeConversation) {
+      await selectConversation(activeConversation.id)
+    }
+  }
+
+  const handleEditMessage = (message: ChatMessage) => {
+    if (sending || typeof message.id !== 'number' || !activeConversation) return
+
+    setEditingMessageId(message.id)
+    setInput(message.content)
+    truncateMessagesFrom(activeConversation.id, message.id)
+  }
+
+  const handleStop = () => {
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = null
+    requestGenRef.current += 1
+
+    const conversationId = activeConversationIdRef.current
+    if (conversationId != null) {
+      removePendingExchange(conversationId)
+    }
+    setSending(false)
+  }
+
   const handleSend = async () => {
     const question = input.trim()
     if (!question || sending) return
 
+    const editFromMessageId = editingMessageId
     setInput('')
+    setEditingMessageId(null)
     setSending(true)
+
+    const requestGen = ++requestGenRef.current
+    const controller = new AbortController()
+    abortControllerRef.current = controller
 
     let conversationId: number
     try {
       conversationId = await ensureActiveConversation()
+      if (requestGen !== requestGenRef.current) return
     } catch {
       setSending(false)
+      abortControllerRef.current = null
       return
     }
+
+    activeConversationIdRef.current = conversationId
 
     const loadingMsg: ChatMessage = {
       id: `loading-${Date.now()}`,
@@ -184,19 +257,30 @@ export function ChatPage() {
         {
           question,
           conversation_id: conversationId,
+          ...(editFromMessageId != null ? { edit_from_message_id: editFromMessageId } : {}),
         },
-        { tip: { success: false } },
+        { tip: { success: false }, signal: controller.signal },
       )
+
+      if (requestGen !== requestGenRef.current) return
+
       if (body.code !== 200 || !body.data?.answer) {
-        removeLoadingMessages(conversationId)
+        removePendingExchange(conversationId)
         return
       }
 
       applyChatResponse(body.data)
-    } catch {
-      removeLoadingMessages(conversationId)
+    } catch (err) {
+      if (requestGen !== requestGenRef.current) return
+      if (err instanceof HttpError && err.message === 'abort') {
+        return
+      }
+      removePendingExchange(conversationId)
     } finally {
-      setSending(false)
+      if (requestGen === requestGenRef.current) {
+        setSending(false)
+        abortControllerRef.current = null
+      }
     }
   }
 
@@ -228,6 +312,8 @@ export function ChatPage() {
                   key={message.id}
                   message={message}
                   onSourceSelect={openSourcePreview}
+                  onEdit={handleEditMessage}
+                  canEdit={!sending && editingMessageId == null}
                 />
               ))
             )}
@@ -237,6 +323,16 @@ export function ChatPage() {
 
       <Paper withBorder p="md" radius="md" bg="white" className={classes.composePanel}>
         <div className={theme.accentTopLine} aria-hidden />
+        {editingMessageId != null ? (
+          <Group justify="space-between" mb="xs">
+            <Text size="xs" c="indigo">
+              {intl.formatMessage({ id: 'chat.editingHint' })}
+            </Text>
+            <Button variant="subtle" size="compact-xs" onClick={() => void cancelEdit()}>
+              {intl.formatMessage({ id: 'chat.cancelEdit' })}
+            </Button>
+          </Group>
+        ) : null}
         <Group align="flex-end" gap="sm" wrap="nowrap">
           <Textarea
             flex={1}
@@ -246,6 +342,7 @@ export function ChatPage() {
             minRows={2}
             autosize
             maxRows={4}
+            disabled={sending}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
@@ -253,15 +350,25 @@ export function ChatPage() {
               }
             }}
           />
-          <Button
-            className={theme.primaryBtn}
-            leftSection={<IconSend size={16} />}
-            onClick={() => void handleSend()}
-            loading={sending}
-            disabled={!input.trim()}
-          >
-            {intl.formatMessage({ id: 'chat.send' })}
-          </Button>
+          {sending ? (
+            <Button
+              variant="light"
+              color="red"
+              leftSection={<IconSquare size={16} />}
+              onClick={handleStop}
+            >
+              {intl.formatMessage({ id: 'chat.stop' })}
+            </Button>
+          ) : (
+            <Button
+              className={theme.primaryBtn}
+              leftSection={<IconSend size={16} />}
+              onClick={() => void handleSend()}
+              disabled={!input.trim()}
+            >
+              {intl.formatMessage({ id: 'chat.send' })}
+            </Button>
+          )}
         </Group>
       </Paper>
 

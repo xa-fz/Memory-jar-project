@@ -6,6 +6,7 @@ from app.schemas.conversations import ChatSource, MessageItem
 class ChatRequest(BaseModel):
     question: str = Field(min_length=1, max_length=4000)
     conversation_id: int | None = None
+    edit_from_message_id: int | None = None
 
 
 class ChatResponseData(BaseModel):

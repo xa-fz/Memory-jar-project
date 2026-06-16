@@ -12,6 +12,21 @@
   border: 1px solid var(--mantine-color-indigo-1);
 }
 
+.userMessageRow {
+  width: 100%;
+}
+
+.editAction {
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.messagePanel .userMessageRow:hover .editAction,
+.editAction:focus-visible {
+  opacity: 1;
+}
+
 .assistantBubble {
   position: relative;
   background: var(--mantine-color-white) !important;

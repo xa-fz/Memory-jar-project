@@ -12,6 +12,7 @@ from app.core.conversation_service import (
     get_conversation,
     list_conversations,
     message_to_dict,
+    truncate_messages_from,
     update_conversation_title,
 )
 from app.core.deps import get_current_user
@@ -153,6 +154,23 @@ def chat(
             .all()
         )
     ]
+
+    if body.edit_from_message_id is not None:
+        updated, prior_history = truncate_messages_from(
+            db,
+            user_id=current_user.id,
+            conversation_id=conversation.id,
+            message_id=body.edit_from_message_id,
+        )
+        if not updated:
+            return error_response(message="Message not found", code=404)
+        conversation = updated
+        is_first_message = (
+            db.query(Message)
+            .filter(Message.conversation_id == conversation.id)
+            .count()
+            == 0
+        )
 
     try:
         user_message = add_message(

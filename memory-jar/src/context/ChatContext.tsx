@@ -32,6 +32,8 @@ interface ChatContextValue {
     messages: ChatConversation['messages'],
   ) => void
   removeLoadingMessages: (conversationId: number) => void
+  removePendingExchange: (conversationId: number) => void
+  truncateMessagesFrom: (conversationId: number, messageId: number) => void
   applyChatResponse: (data: ChatResponseData) => void
   deleteConversation: (id: number) => Promise<boolean>
   renameConversation: (id: number, title: string) => Promise<boolean>
@@ -177,6 +179,33 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const removePendingExchange = useCallback((conversationId: number) => {
+    setActiveConversation((prev) => {
+      if (!prev || prev.id !== conversationId) return prev
+      const messages = [...prev.messages]
+
+      while (messages.length > 0 && messages[messages.length - 1]?.loading) {
+        messages.pop()
+      }
+
+      const last = messages[messages.length - 1]
+      if (last?.role === 'user' && typeof last.id === 'string') {
+        messages.pop()
+      }
+
+      return { ...prev, messages }
+    })
+  }, [])
+
+  const truncateMessagesFrom = useCallback((conversationId: number, messageId: number) => {
+    setActiveConversation((prev) => {
+      if (!prev || prev.id !== conversationId) return prev
+      const index = prev.messages.findIndex((message) => message.id === messageId)
+      if (index < 0) return prev
+      return { ...prev, messages: prev.messages.slice(0, index) }
+    })
+  }, [])
+
   const applyChatResponse = useCallback((data: ChatResponseData) => {
     const summary: ChatConversationSummary = {
       id: data.conversation_id,
@@ -272,6 +301,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       ensureActiveConversation,
       appendOptimisticMessages,
       removeLoadingMessages,
+      removePendingExchange,
+      truncateMessagesFrom,
       applyChatResponse,
       deleteConversation,
       renameConversation,
@@ -288,6 +319,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       ensureActiveConversation,
       appendOptimisticMessages,
       removeLoadingMessages,
+      removePendingExchange,
+      truncateMessagesFrom,
       applyChatResponse,
       deleteConversation,
       renameConversation,
