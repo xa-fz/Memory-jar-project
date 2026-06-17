@@ -78,7 +78,7 @@ def get_conversation(db: Session, *, user_id: int, conversation_id: int) -> Conv
 
 
 def create_conversation(db: Session, *, user_id: int, title: str) -> Conversation:
-    conversation = Conversation(user_id=user_id, title=title.strip())
+    conversation = Conversation(user_id=user_id, title=title)
     db.add(conversation)
     db.commit()
     db.refresh(conversation)
@@ -104,7 +104,7 @@ def update_conversation_title(
     conversation = get_conversation(db, user_id=user_id, conversation_id=conversation_id)
     if not conversation:
         return None
-    conversation.title = title.strip()
+    conversation.title = title
     conversation.title_customized = True
     db.commit()
     db.refresh(conversation)
@@ -153,7 +153,7 @@ def prepare_message_edit(
     if later_ids:
         db.query(Message).filter(Message.id.in_(later_ids)).delete(synchronize_session=False)
 
-    target.content = new_content.strip()
+    target.content = new_content
     conversation.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(conversation)
@@ -191,21 +191,3 @@ def add_message(
         db.refresh(message)
     return message
 
-
-def maybe_update_title_from_question(
-    db: Session,
-    *,
-    conversation: Conversation,
-    question: str,
-) -> None:
-    count = (
-        db.query(Message)
-        .filter(Message.conversation_id == conversation.id)
-        .count()
-    )
-    if count > 0:
-        return
-    title = build_conversation_title(question)
-    if not title:
-        return
-    conversation.title = title

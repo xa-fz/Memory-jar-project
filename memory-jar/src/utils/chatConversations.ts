@@ -8,13 +8,6 @@ export function sortConversations(
   )
 }
 
-export function buildConversationTitle(question: string, maxLen = 24): string {
-  const normalized = question.replace(/\s+/g, ' ').trim()
-  if (!normalized) return ''
-  if (normalized.length <= maxLen) return normalized
-  return `${normalized.slice(0, maxLen)}…`
-}
-
 export function mapConversationSummary(item: {
   id: number
   title: string

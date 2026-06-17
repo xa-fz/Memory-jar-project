@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.schemas.validators import strip_required_text
 
 
 class ChatSource(BaseModel):
@@ -29,11 +31,21 @@ class ConversationDetail(BaseModel):
 
 
 class ConversationUpdateRequest(BaseModel):
-    title: str = Field(min_length=1, max_length=255)
+    title: str = Field(max_length=255)
+
+    @field_validator("title")
+    @classmethod
+    def normalize_title(cls, value: str) -> str:
+        return strip_required_text(value, field_name="Title")
 
 
 class ConversationCreateRequest(BaseModel):
-    title: str = Field(min_length=1, max_length=255)
+    title: str = Field(max_length=255)
+
+    @field_validator("title")
+    @classmethod
+    def normalize_title(cls, value: str) -> str:
+        return strip_required_text(value, field_name="Title")
 
 
 class ConversationCreateData(BaseModel):

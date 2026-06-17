@@ -39,10 +39,9 @@ def _build_search_query(question: str, history: list[dict]) -> str:
     """结合最近几轮对话构造检索 query，便于理解「我的油箱多大」这类追问。"""
     recent = history[-MAX_HISTORY_FOR_SEARCH:] if history else []
     parts = [m["content"].strip() for m in recent if m.get("content", "").strip()]
-    text = question.strip()
-    if text and (not parts or parts[-1] != text):
-        parts.append(text)
-    return "\n".join(parts) if parts else text
+    if not parts or parts[-1] != question:
+        parts.append(question)
+    return "\n".join(parts)
 
 
 def _build_user_prompt(question: str, contexts: list[dict]) -> str:
@@ -90,12 +89,9 @@ def _prepare_llm_messages(
     question: str,
     history: list[dict] | None = None,
 ) -> tuple[list[dict], list[ChatCompletionMessageParam], list[dict]]:
-    text = question.strip()
-    if not text:
-        raise ValueError("Question is empty")
-
+    """question 须为 API 层校验过的非空字符串。"""
     prior = history or []
-    search_query = _build_search_query(text, prior)
+    search_query = _build_search_query(question, prior)
     hits = get_vector_store().search(user_id=user_id, query=search_query)
 
     system_prompt = SYSTEM_PROMPT_WITH_CONTEXT if hits else SYSTEM_PROMPT_NO_CONTEXT
@@ -108,7 +104,7 @@ def _prepare_llm_messages(
         elif role == "assistant" and content:
             messages.append({"role": "assistant", "content": content})
 
-    messages.append({"role": "user", "content": _build_user_prompt(text, hits)})
+    messages.append({"role": "user", "content": _build_user_prompt(question, hits)})
     return hits, messages, _build_sources(hits)
 
 

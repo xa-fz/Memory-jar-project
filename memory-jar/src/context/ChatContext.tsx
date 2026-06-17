@@ -357,14 +357,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [activeId, intl])
 
   const renameConversation = useCallback(async (id: number, title: string) => {
-    const trimmed = title.trim()
-    if (!trimmed) {
-      return false
-    }
-
     const body = await httpPatch<{ id: number; title: string; updated_at: string }>(
       `/chat/conversations/${id}`,
-      { title: trimmed },
+      { title },
       { tip: { success: intl.formatMessage({ id: 'chat.renameSuccess' }) } },
     )
     if (body.code !== 200 || !body.data) {

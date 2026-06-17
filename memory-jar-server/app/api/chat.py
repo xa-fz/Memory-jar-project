@@ -47,9 +47,7 @@ def _prepare_chat_exchange(
     body: ChatRequest,
     current_user: User,
 ) -> tuple[Conversation, list[dict], Message, str] | dict:
-    question = body.question.strip()
-    if not question:
-        return error_response(message="Question is empty", code=400)
+    question = body.question
 
     conversation: Conversation | None = None
     if body.conversation_id is not None:
@@ -79,7 +77,7 @@ def _prepare_chat_exchange(
             message_id=body.edit_from_message_id,
             new_content=question,
         )
-        if not conversation or user_message is None:
+        if user_message is None:
             return error_response(message="Message not found", code=404)
     else:
         prior_history = [
@@ -144,7 +142,7 @@ def create_conversation_endpoint(
     conversation = create_conversation(
         db,
         user_id=current_user.id,
-        title=body.title.strip(),
+        title=body.title,
     )
     data = ConversationCreateData(**conversation_to_detail(conversation)).model_dump()
     return success_response(data=data)
@@ -313,23 +311,12 @@ def chat_stream(
                 write_db.refresh(write_conversation)
                 write_db.refresh(assistant_message)
 
-                persisted_user = (
-                    write_db.query(Message)
-                    .filter(
-                        Message.id == user_message_data["id"],
-                        Message.conversation_id == conversation_id,
-                    )
-                    .first()
-                )
-                if not persisted_user:
-                    raise ValueError("User message not found")
-
                 data = ChatResponseData(
                     answer=answer,
                     sources=sources,
                     conversation_id=write_conversation.id,
                     conversation_title=write_conversation.title,
-                    user_message=MessageItem(**message_to_dict(persisted_user)),
+                    user_message=MessageItem(**user_message_data),
                     assistant_message=MessageItem(**message_to_dict(assistant_message)),
                 ).model_dump()
             finally:

@@ -20,10 +20,8 @@ def _build_client() -> OpenAI:
 
 
 def generate_summary(content: str) -> str:
-    text = content.strip()
-    if not text:
-        raise ValueError("Document content is empty")
-
+    """content 须为调用方已校验的非空文档正文。"""
+    text = content
     if len(text) > MAX_SUMMARY_INPUT_CHARS:
         text = f"{text[:MAX_SUMMARY_INPUT_CHARS]}\n\n[内容已截断]"
 
