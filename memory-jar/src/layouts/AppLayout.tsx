@@ -63,6 +63,7 @@ function AppShellContent() {
 
   return (
     <AppShell
+      className={classes.appShell}
       navbar={{ width: 300, breakpoint: 'sm' }}
       padding="md"
     >
@@ -146,7 +147,7 @@ function AppShellContent() {
         </Stack>
       </AppShell.Navbar>
 
-      <AppShell.Main bg="gray.0" style={{ display: 'flex', flexDirection: 'column' }}>
+      <AppShell.Main bg="gray.0" className={classes.main}>
         <Outlet />
       </AppShell.Main>
     </AppShell>

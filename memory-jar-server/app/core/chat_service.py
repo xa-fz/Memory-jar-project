@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
@@ -82,12 +84,12 @@ def _build_sources(hits: list[dict]) -> list[dict]:
     return sources
 
 
-def answer_question(
+def _prepare_llm_messages(
     *,
     user_id: int,
     question: str,
     history: list[dict] | None = None,
-) -> dict:
+) -> tuple[list[dict], list[ChatCompletionMessageParam], list[dict]]:
     text = question.strip()
     if not text:
         raise ValueError("Question is empty")
@@ -96,9 +98,7 @@ def answer_question(
     search_query = _build_search_query(text, prior)
     hits = get_vector_store().search(user_id=user_id, query=search_query)
 
-    client = _build_client()
     system_prompt = SYSTEM_PROMPT_WITH_CONTEXT if hits else SYSTEM_PROMPT_NO_CONTEXT
-
     messages: list[ChatCompletionMessageParam] = [{"role": "system", "content": system_prompt}]
     for msg in prior[-MAX_HISTORY_MESSAGES:]:
         role = msg.get("role")
@@ -109,7 +109,22 @@ def answer_question(
             messages.append({"role": "assistant", "content": content})
 
     messages.append({"role": "user", "content": _build_user_prompt(text, hits)})
+    return hits, messages, _build_sources(hits)
 
+
+def answer_question(
+    *,
+    user_id: int,
+    question: str,
+    history: list[dict] | None = None,
+) -> dict:
+    _, messages, sources = _prepare_llm_messages(
+        user_id=user_id,
+        question=question,
+        history=history,
+    )
+
+    client = _build_client()
     response = client.chat.completions.create(
         model=settings.llm_model,
         messages=messages,
@@ -120,4 +135,33 @@ def answer_question(
     if not answer:
         raise ValueError("LLM returned empty answer")
 
-    return {"answer": answer, "sources": _build_sources(hits)}
+    return {"answer": answer, "sources": sources}
+
+
+def stream_answer_text(
+    *,
+    user_id: int,
+    question: str,
+    history: list[dict] | None = None,
+) -> tuple[Iterator[str], list[dict]]:
+    _, messages, sources = _prepare_llm_messages(
+        user_id=user_id,
+        question=question,
+        history=history,
+    )
+
+    client = _build_client()
+    stream = client.chat.completions.create(
+        model=settings.llm_model,
+        messages=messages,
+        temperature=0.3,
+        stream=True,
+    )
+
+    def generate() -> Iterator[str]:
+        for chunk in stream:
+            delta = chunk.choices[0].delta.content
+            if delta:
+                yield delta
+
+    return generate(), sources

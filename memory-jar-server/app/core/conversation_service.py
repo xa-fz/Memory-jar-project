@@ -111,48 +111,54 @@ def update_conversation_title(
     return conversation
 
 
-def truncate_messages_from(
+def _ordered_messages(db: Session, conversation_id: int) -> list[Message]:
+    return (
+        db.query(Message)
+        .filter(Message.conversation_id == conversation_id)
+        .order_by(Message.created_at, Message.id)
+        .all()
+    )
+
+
+def _find_user_message_index(messages: list[Message], message_id: int) -> int | None:
+    for index, message in enumerate(messages):
+        if message.id == message_id and message.role == "user":
+            return index
+    return None
+
+
+def prepare_message_edit(
     db: Session,
     *,
     user_id: int,
     conversation_id: int,
     message_id: int,
-) -> tuple[Conversation | None, list[dict]]:
-    """Delete the target user message and all messages after it. Return prior history."""
+    new_content: str,
+) -> tuple[Conversation | None, list[dict], Message | None]:
+    """Overwrite the target user message and delete all later messages."""
     conversation = get_conversation(db, user_id=user_id, conversation_id=conversation_id)
     if not conversation:
-        return None, []
+        return None, [], None
 
-    target = (
-        db.query(Message)
-        .filter(
-            Message.id == message_id,
-            Message.conversation_id == conversation_id,
-            Message.role == "user",
-        )
-        .first()
-    )
-    if not target:
-        return None, []
+    messages = _ordered_messages(db, conversation_id)
+    target_index = _find_user_message_index(messages, message_id)
+    if target_index is None:
+        return None, [], None
 
-    prior_messages = (
-        db.query(Message)
-        .filter(
-            Message.conversation_id == conversation_id,
-            Message.created_at < target.created_at,
-        )
-        .order_by(Message.created_at)
-        .all()
-    )
+    target = messages[target_index]
+    prior_messages = messages[:target_index]
+    later_ids = [message.id for message in messages[target_index + 1 :]]
     prior_history = [{"role": message.role, "content": message.content} for message in prior_messages]
 
-    db.query(Message).filter(
-        Message.conversation_id == conversation_id,
-        Message.created_at >= target.created_at,
-    ).delete(synchronize_session=False)
+    if later_ids:
+        db.query(Message).filter(Message.id.in_(later_ids)).delete(synchronize_session=False)
+
+    target.content = new_content.strip()
+    conversation.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(conversation)
-    return conversation, prior_history
+    db.refresh(target)
+    return conversation, prior_history, target
 
 
 def add_message(
