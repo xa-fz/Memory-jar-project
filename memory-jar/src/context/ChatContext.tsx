@@ -310,32 +310,45 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     setActiveId(data.conversation_id)
     setActiveConversation((prev) => {
-      const base =
-        prev && prev.id === data.conversation_id
-          ? prev.messages.filter(
-              (message) =>
-                typeof message.id === 'number' && message.id !== data.user_message.id,
-            )
-          : []
+      const userMessage = {
+        id: data.user_message.id,
+        role: 'user' as const,
+        content: data.user_message.content,
+      }
+      const assistantMessage = {
+        id: data.assistant_message.id,
+        role: 'assistant' as const,
+        content: data.assistant_message.content,
+        sources: data.sources?.length ? data.sources : undefined,
+      }
 
+      if (!prev || prev.id !== data.conversation_id) {
+        return {
+          id: data.conversation_id,
+          title: data.conversation_title,
+          updatedAt: summary.updatedAt,
+          messages: [userMessage, assistantMessage],
+        }
+      }
+
+      const userIndex = prev.messages.findIndex((message) => message.id === data.user_message.id)
+      if (userIndex >= 0) {
+        return {
+          id: data.conversation_id,
+          title: data.conversation_title,
+          updatedAt: summary.updatedAt,
+          messages: [...prev.messages.slice(0, userIndex), userMessage, assistantMessage],
+        }
+      }
+
+      const messages = prev.messages.filter(
+        (message) => typeof message.id === 'number' && !message.loading,
+      )
       return {
         id: data.conversation_id,
         title: data.conversation_title,
         updatedAt: summary.updatedAt,
-        messages: [
-          ...base,
-          {
-            id: data.user_message.id,
-            role: 'user',
-            content: data.user_message.content,
-          },
-          {
-            id: data.assistant_message.id,
-            role: 'assistant',
-            content: data.assistant_message.content,
-            sources: data.sources?.length ? data.sources : undefined,
-          },
-        ],
+        messages: [...messages, userMessage, assistantMessage],
       }
     })
   }, [])

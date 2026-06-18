@@ -270,7 +270,6 @@ export function ChatPage() {
     applyChatMeta,
     patchAssistantMessage,
     patchMessage,
-    applyChatResponse,
   } = useChat()
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -438,7 +437,7 @@ export function ChatPage() {
           },
           onDone: (data) => {
             if (requestGen !== requestGenRef.current) return
-            applyChatResponse(data)
+            void selectConversation(data.conversation_id)
           },
           onError: () => {
             if (requestGen !== requestGenRef.current) return
