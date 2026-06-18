@@ -40,3 +40,6 @@ desktop.ini
 # Temp
 *.tmp
 *.temp
+
+# Cursor (local agent skills / IDE)
+.cursor/
